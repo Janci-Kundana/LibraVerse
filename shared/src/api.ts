@@ -71,12 +71,22 @@ export interface PublicLibraryDto {
   logoUrl: string | null;
 }
 
+export interface CirculationSettings {
+  loanDays: number;
+  maxRenewals: number;
+  /** days a returned copy is held for the next reservation */
+  holdDays: number;
+  /** paise charged when a borrowed copy is lost */
+  lostBookCharge: number;
+}
+
 export interface LibrarySettingsDto {
   id: string;
   name: string;
   slug: string;
   logoUrl: string | null;
   cardColours: string[];
+  circulation: CirculationSettings;
   planCode: PlatformPlanCode | null;
   branchLimit: number | null;
 }
@@ -213,4 +223,97 @@ export interface CsvImportResultDto {
   created: number;
   copiesCreated: number;
   errors: { row: number; message: string }[];
+}
+
+export const LOAN_STATUSES = ['active', 'returned', 'lost'] as const;
+export type LoanStatus = (typeof LOAN_STATUSES)[number];
+
+export const RESERVATION_STATUSES = [
+  'waiting',
+  'ready',
+  'fulfilled',
+  'cancelled',
+  'expired',
+] as const;
+export type ReservationStatus = (typeof RESERVATION_STATUSES)[number];
+
+export interface LoanDto {
+  id: string;
+  bookId: string;
+  bookTitle: string;
+  copyCode: string;
+  memberId: string;
+  memberName: string;
+  issuedAt: string;
+  dueAt: string;
+  returnedAt: string | null;
+  status: LoanStatus;
+  renewals: number;
+  overdueDays: number;
+  /** paise */
+  fineAmount: number;
+  damageCharge: number;
+  chargeNote: string | null;
+  duesPaid: boolean;
+}
+
+/** What the counter sees after scanning a member card (FR-15, TC-05). */
+export interface MemberScanDto {
+  memberId: string;
+  name: string;
+  email: string;
+  membershipNo: string | null;
+  planName: string | null;
+  bookLimit: number;
+  validTill: string | null;
+  membershipStatus: 'active' | 'expired' | 'none' | 'unverified';
+  activeLoans: LoanDto[];
+  /** paise owed: unpaid late fines and lost/damage charges */
+  pendingDues: number;
+  canBorrow: boolean;
+  blockedReason: string | null;
+  readyReservations: { bookTitle: string; copyCode: string }[];
+}
+
+export interface ReturnResultDto {
+  loan: LoanDto;
+  /** who the copy is now held for, if someone reserved the book */
+  heldFor: string | null;
+}
+
+export interface ReservationDto {
+  id: string;
+  bookId: string;
+  bookTitle: string;
+  memberName: string;
+  status: ReservationStatus;
+  position: number | null;
+  holdUntil: string | null;
+  copyCode: string | null;
+  createdAt: string;
+}
+
+export interface MemberCardDto {
+  name: string;
+  libraryName: string;
+  libraryInitial: string;
+  logoUrl: string | null;
+  cardColours: string[];
+  membershipNo: string;
+  memberSince: string;
+  validTill: string | null;
+  tier: CardTier;
+  status: 'active' | 'expired' | 'blocked';
+  /** the signed token encoded in the QR */
+  qrToken: string;
+  /** PNG data URL of the QR */
+  qrDataUrl: string;
+  revealed: boolean;
+}
+
+export interface MemberLoansDto {
+  current: LoanDto[];
+  history: LoanDto[];
+  pendingDues: number;
+  reservations: ReservationDto[];
 }

@@ -16,6 +16,9 @@ const NAV: Record<Role, NavItem[]> = {
   ],
   libraryAdmin: [
     { to: '/library', label: 'Dashboard' },
+    { to: '/library/counter', label: 'Counter' },
+    { to: '/library/loans', label: 'Loans' },
+    { to: '/library/reservations', label: 'Reservations' },
     { to: '/library/verifications', label: 'ID verification' },
     { to: '/library/catalog', label: 'Catalog' },
     { to: '/library/plans', label: 'Plans & coupons' },
@@ -26,12 +29,17 @@ const NAV: Record<Role, NavItem[]> = {
   ],
   librarian: [
     { to: '/library', label: 'Dashboard' },
+    { to: '/library/counter', label: 'Counter' },
+    { to: '/library/loans', label: 'Loans' },
+    { to: '/library/reservations', label: 'Reservations' },
     { to: '/library/verifications', label: 'ID verification' },
     { to: '/library/catalog', label: 'Catalog' },
     { to: '/library/security', label: 'Security' },
   ],
   member: [
     { to: '/member', label: 'Home' },
+    { to: '/member/card', label: 'My card' },
+    { to: '/member/loans', label: 'My books' },
     { to: '/member/catalog', label: 'Catalog' },
     { to: '/member/wishlist', label: 'Wishlist' },
   ],

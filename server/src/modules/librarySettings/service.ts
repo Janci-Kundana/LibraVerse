@@ -30,6 +30,12 @@ export async function getSettings(libraryId: string): Promise<LibrarySettingsDto
     slug: library.slug,
     logoUrl: library.logoUrl ?? null,
     cardColours: library.cardColours,
+    circulation: {
+      loanDays: library.circulation?.loanDays ?? 14,
+      maxRenewals: library.circulation?.maxRenewals ?? 2,
+      holdDays: library.circulation?.holdDays ?? 3,
+      lostBookCharge: library.circulation?.lostBookCharge ?? 50_000,
+    },
     planCode: (plan?.code as PlatformPlanCode | undefined) ?? null,
     branchLimit: plan?.branchLimit ?? null,
   };
@@ -43,6 +49,7 @@ export async function updateSettings(
   const set: Record<string, unknown> = {};
   if (input.name !== undefined) set.name = input.name;
   if (input.cardColours !== undefined) set.cardColours = input.cardColours;
+  if (input.circulation !== undefined) set.circulation = input.circulation;
   if (input.logo === null) set.logoUrl = null;
   else if (input.logo !== undefined) {
     const file = decodeDataUrl(input.logo, {

@@ -31,6 +31,10 @@ Status: **approved 2026-09-29**. Each phase ends with green tests, run instructi
 - Files are sent as base64 data URLs in JSON (no multipart dependency), checked by magic bytes. Storage is Cloudinary when `CLOUDINARY_URL` is set, else local disk (`UPLOAD_DIR`); ID proofs are always private and only served to that library's staff with `Cache-Control: no-store`.
 - A member can sign in right after joining, but every member route except their profile and ID re-upload requires an approved ID (`requireVerifiedMember`, TC-08).
 - Book copy QR codes are random 72-bit codes (`LVC-…`), unique per library and looked up inside the scanning librarian's tenant; they are not signed (only the member card QR is). The wishlist lives on `memberProfiles.wishlist` rather than a new collection.
+- Card QR token: `LV1.<memberUserId>.<libraryId>.<HMAC-SHA256(memberId:libraryId)>` keyed by `CARD_QR_SECRET`, verified on every scan and rejected when it belongs to another library.
+- Fines are whole days late (any part of a day counts) × the plan's fine per day, snapshotted on the loan at issue. Late fines and lost/damage charges live on the loan until paid (`duesPaidAt`); any unpaid dues or an overdue loan block new issues (TC-05).
+- Circulation settings (loan days 14, renewals 2, hold days 3, lost-book charge ₹500) are per library, editable by the admin. Reservations are only allowed when no copy is on the shelf; a returned copy is held for the first waiting member (TC-09).
+- Background jobs run in system context only to list active libraries, then per library in its tenant context; `CRON_ENABLED=false` turns them off.
 - Mongoose is pinned to **v8** (MongoDB driver 6). With Mongoose 9 / driver 7, the connection handshake fails inside Jest's VM sandbox ("Missing required sub-document 'driver' in the client metadata document"), although it works in plain Node. Revisit when upgrading.
 
 ## Progress
@@ -39,3 +43,4 @@ Status: **approved 2026-09-29**. Each phase ends with green tests, run instructi
 - [x] Phase 1: Auth, tenancy, RBAC, audit (2026-09-30)
 - [x] Phase 2: Library setup and members (2026-09-30)
 - [x] Phase 3: Catalog and discovery (2026-09-30)
+- [x] Phase 4: Circulation (2026-09-30)

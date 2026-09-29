@@ -5,11 +5,14 @@ import { connectDb, disconnectDb } from './core/db';
 import { createApp } from './app';
 import { runAsSystem } from './core/tenant';
 import { ensureDefaultPlans } from './modules/platformPlans/service';
+import { startJobs } from './jobs/scheduler';
 
 async function main() {
   await connectDb(env.MONGODB_URI);
   console.log('MongoDB connected');
   await runAsSystem('startup:seed-plans', ensureDefaultPlans);
+
+  if (env.CRON_ENABLED) startJobs();
 
   const server = http.createServer(createApp());
   server.listen(env.PORT, () => {

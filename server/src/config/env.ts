@@ -11,6 +11,13 @@ const envSchema = z.object({
   CLIENT_URL: z.url().default('http://localhost:5173'),
   JWT_ACCESS_SECRET: secret,
   JWT_REFRESH_SECRET: secret,
+  // Signs member card QR codes (HMAC of member id + library id).
+  CARD_QR_SECRET: secret,
+  // Background jobs (reminders, expiries). Off in tests; set false to disable elsewhere.
+  CRON_ENABLED: z
+    .enum(['true', 'false'])
+    .default('true')
+    .transform((v) => v === 'true'),
   // Email. Without SMTP_HOST, mail is printed to the console (development only).
   SMTP_HOST: z.string().optional(),
   SMTP_PORT: z.coerce.number().int().positive().default(587),

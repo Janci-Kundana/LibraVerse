@@ -15,6 +15,18 @@ const librarySchema = new Schema(
     statusReason: { type: String, default: null },
     // Filled in Phase 5; razorpaySecret and the webhook secret are stored encrypted.
     razorpayKeyId: { type: String, default: null },
+    circulation: {
+      type: new Schema(
+        {
+          loanDays: { type: Number, default: 14, min: 1, max: 180 },
+          maxRenewals: { type: Number, default: 2, min: 0, max: 10 },
+          holdDays: { type: Number, default: 3, min: 1, max: 30 },
+          lostBookCharge: { type: Number, default: 50_000, min: 0 }, // paise
+        },
+        { _id: false },
+      ),
+      default: () => ({}),
+    },
   },
   { timestamps: true },
 );

@@ -11,6 +11,8 @@ import { BranchModel } from '../src/modules/branches/model';
 import { BookCopyModel } from '../src/modules/copies/model';
 import { ReviewModel } from '../src/modules/reviews/model';
 import { CouponModel } from '../src/modules/coupons/model';
+import { LoanModel } from '../src/modules/loans/model';
+import { ReservationModel } from '../src/modules/reservations/model';
 import { MemberProfileModel } from '../src/modules/members/model';
 import { MembershipPlanModel } from '../src/modules/membershipPlans/model';
 import { SubscriptionModel } from '../src/modules/subscriptions/model';
@@ -92,6 +94,24 @@ const TENANT_MODELS: TenantCase[] = [
     model: ReviewModel,
     data: () => ({ bookId: new Types.ObjectId(), memberId: new Types.ObjectId(), rating: 4 }),
     update: { rating: 1 },
+  },
+  {
+    model: LoanModel,
+    data: () => ({
+      copyId: new Types.ObjectId(),
+      bookId: new Types.ObjectId(),
+      memberId: new Types.ObjectId(),
+      issuedBy: new Types.ObjectId(),
+      issuedAt: new Date(),
+      dueAt: new Date(),
+      finePerDay: 500,
+    }),
+    update: { fineAmount: 99_999 },
+  },
+  {
+    model: ReservationModel,
+    data: () => ({ bookId: new Types.ObjectId(), memberId: new Types.ObjectId() }),
+    update: { status: 'cancelled' },
   },
   {
     model: AuditLogModel,

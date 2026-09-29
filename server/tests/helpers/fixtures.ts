@@ -2,7 +2,10 @@ import request from 'supertest';
 import type { Express } from 'express';
 import type { LibraryStatus, PlatformPlanCode, Role } from '@libraverse/shared';
 import { testOutbox } from '../../src/core/mailer';
-import { runAsSystem } from '../../src/core/tenant';
+import { runAsSystem, runWithTenant } from '../../src/core/tenant';
+import { cardToken } from '../../src/modules/card/token';
+import { MemberProfileModel } from '../../src/modules/members/model';
+import { MembershipPlanModel } from '../../src/modules/membershipPlans/model';
 import { hashPassword } from '../../src/modules/auth/service';
 import { BranchModel } from '../../src/modules/branches/model';
 import { LibraryModel } from '../../src/modules/libraries/model';
@@ -105,3 +108,43 @@ export const PNG_DATA_URL = `data:image/png;base64,${Buffer.from([
 export const PDF_DATA_URL = `data:application/pdf;base64,${Buffer.from('%PDF-1.4 test').toString('base64')}`;
 /** Claims to be a PNG but is plain text. */
 export const FAKE_PNG_DATA_URL = `data:image/png;base64,${Buffer.from('hello').toString('base64')}`;
+
+/** A verified member with an active plan, ready to borrow. Returns ids and a signed-in agent. */
+export async function activeMember(
+  app: Express,
+  libraryId: string,
+  email: string,
+  plan: { bookLimit?: number; finePerDay?: number; validDays?: number } = {},
+) {
+  const user = await createUser({ libraryId, role: 'member', email });
+  const profile = await runWithTenant(libraryId, async () => {
+    const p =
+      (await MembershipPlanModel.findOne({
+        name: `Plan ${plan.bookLimit ?? 2}-${plan.finePerDay ?? 500}`,
+      })) ??
+      (await MembershipPlanModel.create({
+        name: `Plan ${plan.bookLimit ?? 2}-${plan.finePerDay ?? 500}`,
+        price: 10_000,
+        durationDays: 30,
+        bookLimit: plan.bookLimit ?? 2,
+        finePerDay: plan.finePerDay ?? 500,
+      }));
+    return MemberProfileModel.create({
+      userId: user._id,
+      idProofKey: 'private/x.png',
+      termsAcceptedAt: new Date(),
+      verificationStatus: 'approved',
+      verifiedAt: new Date(),
+      membershipNo: String(4_000_000_000_000_000 + Math.floor(Math.random() * 1e12)),
+      planId: p._id,
+      validTill: new Date(Date.now() + (plan.validDays ?? 30) * 86_400_000),
+    });
+  });
+  return {
+    user,
+    profile,
+    id: String(user._id),
+    token: cardToken(String(user._id), libraryId),
+    agent: await signedInAgent(app, email),
+  };
+}

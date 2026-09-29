@@ -3,7 +3,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { LibrarySettingsDto } from '@libraverse/shared';
 import { Button, Card, ErrorText, Field, PageHeader } from '../../components/ui';
 import { api, errorMessage, put } from '../../lib/api';
-import { readFileAsDataUrl } from '../../lib/format';
+import { readFileAsDataUrl, toPaise } from '../../lib/format';
 import { ME_KEY } from '../auth/useAuth';
 
 const SETTINGS_KEY = ['library', 'settings'] as const;
@@ -25,12 +25,24 @@ function SettingsForm({ settings: s }: { settings: LibrarySettingsDto }) {
     s.cardColours.length ? s.cardColours : ['#c0263a', '#111827'],
   );
   const [logo, setLogo] = useState<File | null>(null);
+  const [circ, setCirc] = useState({
+    loanDays: String(s.circulation.loanDays),
+    maxRenewals: String(s.circulation.maxRenewals),
+    holdDays: String(s.circulation.holdDays),
+    lostBookCharge: String(s.circulation.lostBookCharge / 100),
+  });
 
   const save = useMutation({
     mutationFn: async () =>
       put<LibrarySettingsDto>('/api/library/settings', {
         name,
         cardColours: colours,
+        circulation: {
+          loanDays: Number(circ.loanDays),
+          maxRenewals: Number(circ.maxRenewals),
+          holdDays: Number(circ.holdDays),
+          lostBookCharge: toPaise(circ.lostBookCharge),
+        },
         ...(logo ? { logo: await readFileAsDataUrl(logo) } : {}),
       }),
     onSuccess: (data) => {
@@ -95,6 +107,41 @@ function SettingsForm({ settings: s }: { settings: LibrarySettingsDto }) {
                 />
               ))}
             </div>
+          </fieldset>
+          <fieldset className="grid gap-3 sm:grid-cols-2">
+            <legend className="mb-2 text-sm text-gray-300">Borrowing rules</legend>
+            <Field
+              label="Loan period (days)"
+              type="number"
+              min="1"
+              max="180"
+              value={circ.loanDays}
+              onChange={(e) => setCirc({ ...circ, loanDays: e.target.value })}
+            />
+            <Field
+              label="Renewals allowed"
+              type="number"
+              min="0"
+              max="10"
+              value={circ.maxRenewals}
+              onChange={(e) => setCirc({ ...circ, maxRenewals: e.target.value })}
+            />
+            <Field
+              label="Reservation hold (days)"
+              type="number"
+              min="1"
+              max="30"
+              value={circ.holdDays}
+              onChange={(e) => setCirc({ ...circ, holdDays: e.target.value })}
+            />
+            <Field
+              label="Lost book charge (₹)"
+              type="number"
+              min="0"
+              step="0.01"
+              value={circ.lostBookCharge}
+              onChange={(e) => setCirc({ ...circ, lostBookCharge: e.target.value })}
+            />
           </fieldset>
           <p className="text-sm text-gray-500">
             Web address: /{s.slug} · Plan: {s.planCode ?? '—'} · Branches allowed:{' '}

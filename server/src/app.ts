@@ -12,6 +12,7 @@ import { adminLibraryRoutes, libraryRoutes } from './modules/libraries/routes';
 import { platformPlanRoutes } from './modules/platformPlans/routes';
 import { bookRoutes, copyRoutes } from './modules/books/routes';
 import { catalogRoutes } from './modules/catalog/routes';
+import { circulationRoutes, memberCirculationRoutes } from './modules/circulation/routes';
 import { couponRoutes } from './modules/coupons/routes';
 import { fileRoutes } from './modules/files/routes';
 import { librarySettingsRoutes, publicLibraryRoutes } from './modules/librarySettings/routes';
@@ -59,6 +60,8 @@ export function createApp() {
   app.use('/api/books', bookRoutes);
   app.use('/api/copies', copyRoutes);
   app.use('/api/member/catalog', catalogRoutes);
+  app.use('/api/circulation', circulationRoutes);
+  app.use('/api/member', memberCirculationRoutes);
   app.use('/api/member', memberRoutes);
   app.use('/api/verifications', verificationRoutes);
   app.use('/api/files', fileRoutes);

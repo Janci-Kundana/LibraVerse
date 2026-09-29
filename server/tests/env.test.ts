@@ -3,6 +3,7 @@ import { parseEnv } from '../src/config/env';
 const secrets = {
   JWT_ACCESS_SECRET: 'a'.repeat(32),
   JWT_REFRESH_SECRET: 'b'.repeat(32),
+  CARD_QR_SECRET: 'c'.repeat(32),
 };
 
 describe('parseEnv', () => {
@@ -22,7 +23,12 @@ describe('parseEnv', () => {
       /JWT_ACCESS_SECRET/,
     );
     expect(() =>
-      parseEnv({ ...uri, JWT_ACCESS_SECRET: 'a'.repeat(32), JWT_REFRESH_SECRET: 'a'.repeat(32) }),
+      parseEnv({
+        ...uri,
+        ...secrets,
+        JWT_ACCESS_SECRET: 'a'.repeat(32),
+        JWT_REFRESH_SECRET: 'a'.repeat(32),
+      }),
     ).toThrow(/JWT_REFRESH_SECRET/);
   });
 });

@@ -1,6 +1,9 @@
 import type { ReactNode } from 'react';
 import { createBrowserRouter, type RouteObject } from 'react-router';
 import { AdminLibrariesPage } from '../features/admin/AdminLibrariesPage';
+import { CounterPage } from '../features/circulation/CounterPage';
+import { LoansPage, ReservationsPage } from '../features/circulation/LoansPage';
+import { CardPage, MyLoansPage } from '../features/circulation/MemberCirculationPages';
 import {
   MemberBookPage,
   MemberCatalogPage,
@@ -30,6 +33,9 @@ import { VerificationsPage } from '../features/library/VerificationsPage';
 import { JoinPage } from '../features/members/JoinPage';
 import { MemberHome } from '../features/members/MemberHome';
 import { VerifiedOnly } from '../features/members/VerifiedOnly';
+
+/** Member pages beyond Home need an approved ID. */
+const verified = (element: ReactNode) => <VerifiedOnly>{element}</VerifiedOnly>;
 
 /** Library-admin-only pages inside the /library area. */
 const adminOnly = (element: ReactNode) => (
@@ -64,6 +70,9 @@ export const routes: RouteObject[] = [
     ),
     children: [
       { index: true, element: <LibraryHome /> },
+      { path: 'counter', element: <CounterPage /> },
+      { path: 'loans', element: <LoansPage /> },
+      { path: 'reservations', element: <ReservationsPage /> },
       { path: 'verifications', element: <VerificationsPage /> },
       { path: 'catalog', element: <StaffCatalogPage /> },
       { path: 'catalog/new', element: <NewBookPage /> },
@@ -85,30 +94,11 @@ export const routes: RouteObject[] = [
     ),
     children: [
       { index: true, element: <MemberHome /> },
-      {
-        path: 'catalog',
-        element: (
-          <VerifiedOnly>
-            <MemberCatalogPage />
-          </VerifiedOnly>
-        ),
-      },
-      {
-        path: 'books/:id',
-        element: (
-          <VerifiedOnly>
-            <MemberBookPage />
-          </VerifiedOnly>
-        ),
-      },
-      {
-        path: 'wishlist',
-        element: (
-          <VerifiedOnly>
-            <WishlistPage />
-          </VerifiedOnly>
-        ),
-      },
+      { path: 'card', element: verified(<CardPage />) },
+      { path: 'loans', element: verified(<MyLoansPage />) },
+      { path: 'catalog', element: verified(<MemberCatalogPage />) },
+      { path: 'books/:id', element: verified(<MemberBookPage />) },
+      { path: 'wishlist', element: verified(<WishlistPage />) },
     ],
   },
   { path: '*', element: <NotFoundPage /> },

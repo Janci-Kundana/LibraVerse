@@ -7,5 +7,13 @@ export const updateSettingsBody = z.object({
   cardColours: z.array(hexColour).max(3).optional(),
   /** data URL to replace the logo, or null to remove it */
   logo: z.string().max(4_000_000).nullable().optional(),
+  circulation: z
+    .object({
+      loanDays: z.number().int().min(1).max(180),
+      maxRenewals: z.number().int().min(0).max(10),
+      holdDays: z.number().int().min(1).max(30),
+      lostBookCharge: z.number().int().min(0).max(10_000_000),
+    })
+    .optional(),
 });
 export type UpdateSettingsInput = z.infer<typeof updateSettingsBody>;

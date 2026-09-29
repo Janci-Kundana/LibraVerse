@@ -6,10 +6,11 @@ import type {
   CatalogBookDto,
   CatalogFacetsDto,
   Paged,
+  ReservationDto,
 } from '@libraverse/shared';
 import { BookCover, Stars } from '../../components/BookCover';
 import { Button, Card, ErrorText, PageHeader, SelectField } from '../../components/ui';
-import { api, errorMessage, put } from '../../lib/api';
+import { api, errorMessage, post, put } from '../../lib/api';
 import { formatDate } from '../../lib/format';
 
 const CATALOG_KEY = ['member', 'catalog'] as const;
@@ -191,6 +192,10 @@ export function MemberBookPage() {
     queryFn: () => api<CatalogBookDetailDto>(`/api/member/catalog/books/${id}`),
   });
   const toggle = useWishlistToggle();
+  const reserve = useMutation({
+    mutationFn: () => post<ReservationDto>('/api/member/reservations', { bookId: id }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['member', 'loans'] }),
+  });
   const mine = book.data?.reviews.find((r) => r.mine);
   const [rating, setRating] = useState(0);
   const [text, setText] = useState('');
@@ -236,6 +241,22 @@ export function MemberBookPage() {
               ))
             )}
           </div>
+          {b.availability.length === 0 && b.copies.total > 0 && (
+            <div className="mt-4">
+              {reserve.data ? (
+                <p role="status" className="text-sm text-emerald-400">
+                  Reserved. You are #{reserve.data.position} in the queue.
+                </p>
+              ) : (
+                <Button busy={reserve.isPending} onClick={() => reserve.mutate()}>
+                  Reserve
+                </Button>
+              )}
+              <div className="mt-2">
+                <ErrorText>{reserve.error ? errorMessage(reserve.error) : ''}</ErrorText>
+              </div>
+            </div>
+          )}
           <Button
             className="mt-4"
             variant="secondary"
