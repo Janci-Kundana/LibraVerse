@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import { createBrowserRouter, type RouteObject } from 'react-router';
 import { AdminLibrariesPage } from '../features/admin/AdminLibrariesPage';
 import { ForgotPasswordPage } from '../features/auth/ForgotPasswordPage';
@@ -5,11 +6,23 @@ import { LoginPage } from '../features/auth/LoginPage';
 import { RequireRole } from '../features/auth/RequireRole';
 import { SetPasswordPage } from '../features/auth/SetPasswordPage';
 import { DashboardLayout } from '../features/dashboard/DashboardLayout';
-import { LibraryHome, MemberHome } from '../features/dashboard/homes';
+import { LibraryHome } from '../features/dashboard/homes';
 import { SecurityPage } from '../features/dashboard/SecurityPage';
 import { LandingPage } from '../features/landing/LandingPage';
 import { NotFoundPage } from '../features/landing/NotFoundPage';
 import { RegisterLibraryPage } from '../features/libraries/RegisterLibraryPage';
+import { BranchesPage } from '../features/library/BranchesPage';
+import { PlansPage } from '../features/library/PlansPage';
+import { SettingsPage } from '../features/library/SettingsPage';
+import { StaffPage } from '../features/library/StaffPage';
+import { VerificationsPage } from '../features/library/VerificationsPage';
+import { JoinPage } from '../features/members/JoinPage';
+import { MemberHome } from '../features/members/MemberHome';
+
+/** Library-admin-only pages inside the /library area. */
+const adminOnly = (element: ReactNode) => (
+  <RequireRole roles={['libraryAdmin']}>{element}</RequireRole>
+);
 
 export const routes: RouteObject[] = [
   { path: '/', element: <LandingPage /> },
@@ -17,6 +30,7 @@ export const routes: RouteObject[] = [
   { path: '/forgot-password', element: <ForgotPasswordPage /> },
   { path: '/set-password', element: <SetPasswordPage /> },
   { path: '/register-library', element: <RegisterLibraryPage /> },
+  { path: '/join', element: <JoinPage /> },
   {
     path: '/admin',
     element: (
@@ -38,6 +52,11 @@ export const routes: RouteObject[] = [
     ),
     children: [
       { index: true, element: <LibraryHome /> },
+      { path: 'verifications', element: <VerificationsPage /> },
+      { path: 'plans', element: adminOnly(<PlansPage />) },
+      { path: 'branches', element: adminOnly(<BranchesPage />) },
+      { path: 'staff', element: adminOnly(<StaffPage />) },
+      { path: 'settings', element: adminOnly(<SettingsPage />) },
       { path: 'security', element: <SecurityPage /> },
     ],
   },

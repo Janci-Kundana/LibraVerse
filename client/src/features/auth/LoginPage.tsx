@@ -126,9 +126,13 @@ export function LoginPage() {
       }
       footer={
         <>
-          New library?{' '}
+          New here?{' '}
+          <Link to="/join" className="text-brand-500 hover:underline">
+            Join a library
+          </Link>{' '}
+          or{' '}
           <Link to="/register-library" className="text-brand-500 hover:underline">
-            Register it
+            register yours
           </Link>
         </>
       }

@@ -16,10 +16,16 @@ const NAV: Record<Role, NavItem[]> = {
   ],
   libraryAdmin: [
     { to: '/library', label: 'Dashboard' },
+    { to: '/library/verifications', label: 'ID verification' },
+    { to: '/library/plans', label: 'Plans & coupons' },
+    { to: '/library/branches', label: 'Branches' },
+    { to: '/library/staff', label: 'Staff' },
+    { to: '/library/settings', label: 'Settings' },
     { to: '/library/security', label: 'Security' },
   ],
   librarian: [
     { to: '/library', label: 'Dashboard' },
+    { to: '/library/verifications', label: 'ID verification' },
     { to: '/library/security', label: 'Security' },
   ],
   member: [{ to: '/member', label: 'Home' }],

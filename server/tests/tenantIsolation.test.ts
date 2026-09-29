@@ -7,6 +7,9 @@ import { createApp } from '../src/app';
 import { TenantContextError, runAsSystem, runWithTenant } from '../src/core/tenant';
 import { AuditLogModel } from '../src/modules/audit/model';
 import { BranchModel } from '../src/modules/branches/model';
+import { CouponModel } from '../src/modules/coupons/model';
+import { MemberProfileModel } from '../src/modules/members/model';
+import { MembershipPlanModel } from '../src/modules/membershipPlans/model';
 import { SubscriptionModel } from '../src/modules/subscriptions/model';
 import { UserModel } from '../src/modules/users/model';
 import { createLibrary, createUser, signedInAgent } from './helpers/fixtures';
@@ -38,6 +41,35 @@ const TENANT_MODELS: TenantCase[] = [
     model: SubscriptionModel,
     data: () => ({ platformPlanId: new Types.ObjectId() }),
     update: { status: 'cancelled' },
+  },
+  {
+    model: MemberProfileModel,
+    data: () => ({
+      userId: new Types.ObjectId(),
+      idProofKey: 'private/id/x.png',
+      termsAcceptedAt: new Date(),
+    }),
+    update: { verificationStatus: 'approved' },
+  },
+  {
+    model: MembershipPlanModel,
+    data: (tag) => ({
+      name: `Plan ${tag}`,
+      price: 10000,
+      durationDays: 30,
+      bookLimit: 2,
+      finePerDay: 500,
+    }),
+    update: { price: 1 },
+  },
+  {
+    model: CouponModel,
+    data: (tag) => ({
+      code: `CODE${tag.toUpperCase()}`,
+      discountPercent: 10,
+      validTill: new Date(),
+    }),
+    update: { discountPercent: 99 },
   },
   {
     model: AuditLogModel,

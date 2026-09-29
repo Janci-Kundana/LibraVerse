@@ -86,7 +86,7 @@ async function assertLibraryActive(user: UserDoc) {
   );
 }
 
-async function startSession(user: UserDoc): Promise<Tokens> {
+export async function startSession(user: UserDoc): Promise<Tokens> {
   const jti = newJti();
   const session = await SessionModel.create({
     userId: user._id,

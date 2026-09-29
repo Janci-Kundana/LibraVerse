@@ -28,9 +28,12 @@ Status: **approved 2026-09-29**. Each phase ends with green tests, run instructi
 - Accounts are per library: the same email may hold accounts in several libraries (unique index `{libraryId, email}`). If one email + password matches more than one account, login answers 409 `LIBRARY_CHOICE_REQUIRED` and the login page asks which library. An OTP password reset updates every account on that email. (2026-09-30)
 - Auth resolves the tenant from the credential, so its user lookups (login, refresh, OTP, reset, set-password link) run in system context, each keyed by email, token hash or the token's user id.
 - Tenant context lives in `AsyncLocalStorage`; `runWithTenant` / `runAsSystem` always await their callback inside the context, because a Mongoose Query is lazy and would otherwise execute outside it.
+- Files are sent as base64 data URLs in JSON (no multipart dependency), checked by magic bytes. Storage is Cloudinary when `CLOUDINARY_URL` is set, else local disk (`UPLOAD_DIR`); ID proofs are always private and only served to that library's staff with `Cache-Control: no-store`.
+- A member can sign in right after joining, but every member route except their profile and ID re-upload requires an approved ID (`requireVerifiedMember`, TC-08).
 - Mongoose is pinned to **v8** (MongoDB driver 6). With Mongoose 9 / driver 7, the connection handshake fails inside Jest's VM sandbox ("Missing required sub-document 'driver' in the client metadata document"), although it works in plain Node. Revisit when upgrading.
 
 ## Progress
 
 - [x] Phase 0: Scaffold (2026-09-29)
-- [x] Phase 1: Auth, tenancy, RBAC, audit (2026-09-30; awaiting review)
+- [x] Phase 1: Auth, tenancy, RBAC, audit (2026-09-30)
+- [x] Phase 2: Library setup and members (2026-09-30)

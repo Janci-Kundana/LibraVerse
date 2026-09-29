@@ -1,4 +1,10 @@
-import type { ButtonHTMLAttributes, InputHTMLAttributes, ReactNode } from 'react';
+import type {
+  ButtonHTMLAttributes,
+  InputHTMLAttributes,
+  ReactNode,
+  SelectHTMLAttributes,
+} from 'react';
+import { useId } from 'react';
 import { Link } from 'react-router';
 
 /** Centered card used by the sign-in, sign-up and password pages. */
@@ -33,15 +39,23 @@ export function Field({
   hint,
   ...input
 }: InputHTMLAttributes<HTMLInputElement> & { label: string; hint?: string }) {
+  const hintId = useId();
   return (
-    <label className="block">
-      <span className="text-sm text-gray-300">{label}</span>
-      <input
-        {...input}
-        className="mt-1 block w-full rounded-lg border border-gray-700 bg-gray-950 px-3 py-2 text-gray-100 outline-none placeholder:text-gray-600 focus:border-brand-500 focus:ring-1 focus:ring-brand-500"
-      />
-      {hint && <span className="mt-1 block text-xs text-gray-500">{hint}</span>}
-    </label>
+    <div>
+      <label className="block">
+        <span className="text-sm text-gray-300">{label}</span>
+        <input
+          {...input}
+          aria-describedby={hint ? hintId : undefined}
+          className="mt-1 block w-full rounded-lg border border-gray-700 bg-gray-950 px-3 py-2 text-gray-100 outline-none placeholder:text-gray-600 focus:border-brand-500 focus:ring-1 focus:ring-brand-500"
+        />
+      </label>
+      {hint && (
+        <p id={hintId} className="mt-1 text-xs text-gray-500">
+          {hint}
+        </p>
+      )}
+    </div>
   );
 }
 
@@ -79,5 +93,58 @@ export function ErrorText({ children }: { children: ReactNode }) {
     >
       {children}
     </p>
+  );
+}
+
+export function PageHeader({ title, children }: { title: string; children?: ReactNode }) {
+  return (
+    <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
+      <h1 className="text-2xl font-semibold">{title}</h1>
+      {children}
+    </div>
+  );
+}
+
+export function Card({ children, className = '' }: { children: ReactNode; className?: string }) {
+  return (
+    <section className={`rounded-xl border border-gray-800 bg-gray-900 p-4 sm:p-5 ${className}`}>
+      {children}
+    </section>
+  );
+}
+
+export function SelectField({
+  label,
+  children,
+  ...select
+}: SelectHTMLAttributes<HTMLSelectElement> & { label: string }) {
+  return (
+    <label className="block">
+      <span className="text-sm text-gray-300">{label}</span>
+      <select
+        {...select}
+        className="mt-1 block w-full rounded-lg border border-gray-700 bg-gray-950 px-3 py-2 text-gray-100 outline-none focus:border-brand-500"
+      >
+        {children}
+      </select>
+    </label>
+  );
+}
+
+export function StatusPill({
+  tone,
+  children,
+}: {
+  tone: 'green' | 'yellow' | 'red' | 'gray';
+  children: ReactNode;
+}) {
+  const styles = {
+    green: 'bg-emerald-950 text-emerald-300',
+    yellow: 'bg-yellow-950 text-yellow-300',
+    red: 'bg-red-950 text-red-300',
+    gray: 'bg-gray-800 text-gray-400',
+  }[tone];
+  return (
+    <span className={`rounded-full px-2 py-0.5 text-xs capitalize ${styles}`}>{children}</span>
   );
 }

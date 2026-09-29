@@ -1,7 +1,7 @@
 import { fireEvent, screen } from '@testing-library/react';
 import { routes } from '../../app/router';
 import { renderRoute } from '../../test/render';
-import { authUser, mockApi } from '../../test/mockApi';
+import { approvedMemberRoutes, authUser, mockApi } from '../../test/mockApi';
 
 function fillAndSubmit(email = 'sam@x.test', password = 'Readers4ever') {
   fireEvent.change(screen.getByLabelText('Email'), { target: { value: email } });
@@ -16,6 +16,7 @@ describe('LoginPage', () => {
     ['superAdmin', 'Libraries'],
   ] as const)('routes a %s to their dashboard', async (role, heading) => {
     mockApi({
+      ...approvedMemberRoutes,
       'POST /api/auth/login': { status: 200, body: { status: 'ok', user: authUser(role) } },
       'GET /api/admin/libraries?status=pending': { status: 200, body: [] },
     });
@@ -26,6 +27,7 @@ describe('LoginPage', () => {
 
   it('shows the server error for bad credentials', async () => {
     mockApi({
+      ...approvedMemberRoutes,
       'POST /api/auth/login': {
         status: 401,
         body: { error: { code: 'INVALID_CREDENTIALS', message: 'Email or password is incorrect' } },
@@ -38,6 +40,7 @@ describe('LoginPage', () => {
 
   it('asks which library when the email has several, then signs into the chosen one', async () => {
     const calls = mockApi({
+      ...approvedMemberRoutes,
       'POST /api/auth/login': (body) =>
         (body as { libraryId?: string }).libraryId
           ? { status: 200, body: { status: 'ok', user: authUser('member') } }
@@ -59,11 +62,13 @@ describe('LoginPage', () => {
     fillAndSubmit();
     fireEvent.click(await screen.findByRole('button', { name: /City Library/ }));
     expect(await screen.findByRole('heading', { name: 'Home' })).toBeInTheDocument();
-    expect(calls.at(-1)?.body).toMatchObject({ email: 'sam@x.test', libraryId: 'lib1' });
+    const logins = calls.filter((c) => c.path === '/api/auth/login');
+    expect(logins.at(-1)?.body).toMatchObject({ email: 'sam@x.test', libraryId: 'lib1' });
   });
 
   it('asks staff with two-factor on for the emailed code', async () => {
     const calls = mockApi({
+      ...approvedMemberRoutes,
       'POST /api/auth/login': {
         status: 200,
         body: { status: 'twoFactorRequired', challengeToken: 'ch1' },

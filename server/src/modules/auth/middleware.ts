@@ -1,4 +1,4 @@
-import type { RequestHandler } from 'express';
+import type { Request, RequestHandler } from 'express';
 import { roleSatisfies, type Role } from '@libraverse/shared';
 import { AppError } from '../../core/errors';
 import { enterTenant } from '../../core/tenant';
@@ -29,4 +29,16 @@ export function requireRole(...allowed: Role[]): RequestHandler {
     }
     next();
   };
+}
+
+/** The signed-in user as an audit-log actor. */
+export function actorOf(req: Request): { id: string; role: Role } {
+  if (!req.auth) throw new AppError(401, 'UNAUTHENTICATED', 'Sign in required');
+  return { id: req.auth.userId, role: req.auth.role };
+}
+
+/** The signed-in user's library id; throws for the Super Admin. */
+export function libraryOf(req: Request): string {
+  if (!req.auth?.libraryId) throw new AppError(403, 'FORBIDDEN', 'Library account required');
+  return req.auth.libraryId;
 }

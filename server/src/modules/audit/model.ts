@@ -1,4 +1,4 @@
-import { Schema, model, Types, type InferSchemaType } from 'mongoose';
+import { Schema, model, type InferSchemaType } from 'mongoose';
 import { libraryIdPath, tenantPlugin } from '../../core/tenant';
 import { AppError } from '../../core/errors';
 
@@ -8,7 +8,7 @@ const auditLogSchema = new Schema(
   {
     libraryId: libraryIdPath,
     seq: { type: Number, required: true },
-    actorId: { type: Types.ObjectId, ref: 'User', default: null },
+    actorId: { type: Schema.Types.ObjectId, ref: 'User', default: null },
     actorRole: { type: String, default: null },
     action: { type: String, required: true },
     target: {

@@ -1,4 +1,4 @@
-import { Schema, model, Types, type InferSchemaType } from 'mongoose';
+import { Schema, model, type InferSchemaType } from 'mongoose';
 import { SUBSCRIPTION_STATUSES } from '@libraverse/shared';
 import { libraryIdPath, tenantPlugin } from '../../core/tenant';
 
@@ -6,7 +6,7 @@ import { libraryIdPath, tenantPlugin } from '../../core/tenant';
 const subscriptionSchema = new Schema(
   {
     libraryId: libraryIdPath,
-    platformPlanId: { type: Types.ObjectId, ref: 'PlatformPlan', required: true },
+    platformPlanId: { type: Schema.Types.ObjectId, ref: 'PlatformPlan', required: true },
     status: { type: String, enum: SUBSCRIPTION_STATUSES, default: 'pending' },
     currentPeriodEnd: { type: Date, default: null },
     razorpaySubscriptionId: { type: String, default: null },

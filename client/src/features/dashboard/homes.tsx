@@ -11,11 +11,3 @@ export function LibraryHome() {
     </HomeShell>
   );
 }
-
-export function MemberHome() {
-  return (
-    <HomeShell title="Home">
-      <p className="mt-6 text-sm text-gray-500">Your card, loans and payments will appear here.</p>
-    </HomeShell>
-  );
-}

@@ -1,16 +1,23 @@
 import request from 'supertest';
 import type { Express } from 'express';
-import type { LibraryStatus, Role } from '@libraverse/shared';
+import type { LibraryStatus, PlatformPlanCode, Role } from '@libraverse/shared';
 import { testOutbox } from '../../src/core/mailer';
 import { runAsSystem } from '../../src/core/tenant';
 import { hashPassword } from '../../src/modules/auth/service';
 import { BranchModel } from '../../src/modules/branches/model';
 import { LibraryModel } from '../../src/modules/libraries/model';
+import { PlatformPlanModel } from '../../src/modules/platformPlans/model';
+import { ensureDefaultPlans } from '../../src/modules/platformPlans/service';
+import { SubscriptionModel } from '../../src/modules/subscriptions/model';
 import { UserModel } from '../../src/modules/users/model';
 
 export const PASSWORD = 'Readers4ever';
 
-export function createLibrary(slug: string, status: LibraryStatus = 'active') {
+export function createLibrary(
+  slug: string,
+  status: LibraryStatus = 'active',
+  opts: { plan?: PlatformPlanCode } = {},
+) {
   return runAsSystem('test', async () => {
     const library = await LibraryModel.create({
       name: `Library ${slug}`,
@@ -20,6 +27,15 @@ export function createLibrary(slug: string, status: LibraryStatus = 'active') {
       status,
     });
     const branch = await BranchModel.create({ libraryId: library._id, name: `${slug} main` });
+    if (opts.plan) {
+      await ensureDefaultPlans();
+      const plan = await PlatformPlanModel.findOne({ code: opts.plan }).lean();
+      await SubscriptionModel.create({
+        libraryId: library._id,
+        platformPlanId: plan!._id,
+        status: 'active',
+      });
+    }
     return { library, branch, id: String(library._id) };
   });
 }
@@ -81,3 +97,11 @@ export function cookieNames(res: { headers: Record<string, unknown> }): string[]
   const list = Array.isArray(raw) ? (raw as string[]) : [];
   return list.map((c) => c.split('=')[0]!);
 }
+
+/** A tiny file with real PNG / PDF magic bytes, as a data URL. */
+export const PNG_DATA_URL = `data:image/png;base64,${Buffer.from([
+  0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 1, 2, 3, 4,
+]).toString('base64')}`;
+export const PDF_DATA_URL = `data:application/pdf;base64,${Buffer.from('%PDF-1.4 test').toString('base64')}`;
+/** Claims to be a PNG but is plain text. */
+export const FAKE_PNG_DATA_URL = `data:image/png;base64,${Buffer.from('hello').toString('base64')}`;

@@ -24,6 +24,12 @@ export function LandingPage() {
           >
             Register your library
           </Link>
+          <Link
+            to="/join"
+            className="rounded-lg border border-gray-700 px-5 py-2.5 font-medium text-gray-200 hover:bg-gray-800"
+          >
+            Join a library
+          </Link>
         </div>
         <ApiStatus />
       </section>

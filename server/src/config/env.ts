@@ -17,6 +17,13 @@ const envSchema = z.object({
   SMTP_USER: z.string().optional(),
   SMTP_PASS: z.string().optional(),
   MAIL_FROM: z.string().default('LibraVerse <no-reply@libraverse.local>'),
+  // File storage. Without CLOUDINARY_URL, uploads go to UPLOAD_DIR on local disk.
+  CLOUDINARY_URL: z
+    .string()
+    .regex(/^cloudinary:\/\/[^:]+:[^@]+@.+$/, 'must look like cloudinary://<key>:<secret>@<cloud>')
+    .optional()
+    .or(z.literal('').transform(() => undefined)),
+  UPLOAD_DIR: z.string().default('uploads'),
 });
 
 export type Env = z.infer<typeof envSchema>;

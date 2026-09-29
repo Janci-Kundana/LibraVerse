@@ -1,4 +1,4 @@
-import { Schema, model, Types, type InferSchemaType, type HydratedDocument } from 'mongoose';
+import { Schema, model, type InferSchemaType, type HydratedDocument } from 'mongoose';
 import { ROLES, USER_STATUSES } from '@libraverse/shared';
 import { libraryIdPath, tenantPlugin } from '../../core/tenant';
 
@@ -14,7 +14,7 @@ const userSchema = new Schema(
     email: { type: String, required: true, lowercase: true, trim: true },
     passwordHash: { type: String, default: null, select: false },
     role: { type: String, enum: ROLES, required: true },
-    branchId: { type: Types.ObjectId, ref: 'Branch', default: null },
+    branchId: { type: Schema.Types.ObjectId, ref: 'Branch', default: null },
     twoFactorEnabled: { type: Boolean, default: false },
     status: { type: String, enum: USER_STATUSES, default: 'invited' },
     otp: {

@@ -56,3 +56,26 @@ export function authUser(role: 'superAdmin' | 'libraryAdmin' | 'librarian' | 'me
     twoFactorEnabled: false,
   };
 }
+
+export function memberProfile(
+  verificationStatus: 'pending' | 'approved' | 'rejected' = 'approved',
+) {
+  return {
+    id: 'mp1',
+    verificationStatus,
+    verificationNote: verificationStatus === 'rejected' ? 'Photo is blurry' : null,
+    membershipNo: verificationStatus === 'approved' ? '4123456789012345' : null,
+    planId: null,
+    planName: null,
+    validTill: null,
+    cardTier: 'member',
+    walletBalance: 0,
+    badges: [],
+  };
+}
+
+/** Routes the member home page loads, for an approved member with no plan yet. */
+export const approvedMemberRoutes = {
+  'GET /api/member/profile': { status: 200, body: memberProfile('approved') },
+  'GET /api/member/plans': { status: 200, body: [] },
+};
