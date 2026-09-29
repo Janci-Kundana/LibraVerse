@@ -1,5 +1,6 @@
 import type {
   CardTier,
+  CopyStatus,
   LibraryStatus,
   PlatformPlanCode,
   Role,
@@ -133,4 +134,83 @@ export interface VerificationItemDto {
   status: VerificationStatus;
   note: string | null;
   submittedAt: string;
+}
+
+export interface BookDto {
+  id: string;
+  title: string;
+  authors: string[];
+  isbn: string | null;
+  category: string;
+  language: string;
+  description: string;
+  publishedYear: number | null;
+  coverUrl: string | null;
+  ebookUrl: string | null;
+  createdAt: string;
+  copies: { total: number; available: number };
+  ratingAvg: number | null;
+  ratingCount: number;
+  donatedBy: string | null;
+}
+
+export interface CopyDto {
+  id: string;
+  bookId: string;
+  branchId: string;
+  branchName: string | null;
+  qrCode: string;
+  shelf: string;
+  status: CopyStatus;
+}
+
+export interface BookDetailDto extends BookDto {
+  copyList: CopyDto[];
+}
+
+export interface Paged<T> {
+  items: T[];
+  total: number;
+  page: number;
+  pageSize: number;
+}
+
+/** A book as a member sees it in search. */
+export interface CatalogBookDto extends BookDto {
+  inWishlist: boolean;
+}
+
+export interface ReviewDto {
+  id: string;
+  memberName: string;
+  rating: number;
+  text: string;
+  createdAt: string;
+  mine: boolean;
+}
+
+export interface CatalogBookDetailDto extends CatalogBookDto {
+  reviews: ReviewDto[];
+  availability: { branchName: string; available: number }[];
+}
+
+export interface CatalogFacetsDto {
+  categories: string[];
+  languages: string[];
+}
+
+export interface IsbnLookupDto {
+  isbn: string;
+  title: string;
+  authors: string[];
+  publishedYear: number | null;
+  category: string | null;
+  coverUrl: string | null;
+  description: string;
+}
+
+export interface CsvImportResultDto {
+  created: number;
+  copiesCreated: number;
+  errors: { row: number; message: string }[];
 }

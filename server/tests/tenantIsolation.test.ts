@@ -6,7 +6,10 @@ import request from 'supertest';
 import { createApp } from '../src/app';
 import { TenantContextError, runAsSystem, runWithTenant } from '../src/core/tenant';
 import { AuditLogModel } from '../src/modules/audit/model';
+import { BookModel } from '../src/modules/books/model';
 import { BranchModel } from '../src/modules/branches/model';
+import { BookCopyModel } from '../src/modules/copies/model';
+import { ReviewModel } from '../src/modules/reviews/model';
 import { CouponModel } from '../src/modules/coupons/model';
 import { MemberProfileModel } from '../src/modules/members/model';
 import { MembershipPlanModel } from '../src/modules/membershipPlans/model';
@@ -70,6 +73,25 @@ const TENANT_MODELS: TenantCase[] = [
       validTill: new Date(),
     }),
     update: { discountPercent: 99 },
+  },
+  {
+    model: BookModel,
+    data: (tag) => ({ title: `Book ${tag}` }),
+    update: { title: 'changed' },
+  },
+  {
+    model: BookCopyModel,
+    data: (tag) => ({
+      bookId: new Types.ObjectId(),
+      branchId: new Types.ObjectId(),
+      qrCode: `LVC-${tag}`,
+    }),
+    update: { status: 'lost' },
+  },
+  {
+    model: ReviewModel,
+    data: () => ({ bookId: new Types.ObjectId(), memberId: new Types.ObjectId(), rating: 4 }),
+    update: { rating: 1 },
   },
   {
     model: AuditLogModel,

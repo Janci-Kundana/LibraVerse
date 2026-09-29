@@ -23,6 +23,7 @@ const memberProfileSchema = new Schema(
     cardRevealedAt: { type: Date, default: null },
     walletBalance: { type: Number, default: 0 }, // paise
     badges: { type: [String], default: [] },
+    wishlist: { type: [Schema.Types.ObjectId], ref: 'Book', default: [] },
   },
   { timestamps: true },
 );

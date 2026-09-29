@@ -32,13 +32,11 @@ const auditActions = (libraryId: string) =>
 describe('library settings and branding (FR-08)', () => {
   it('admin updates name, card colours and logo; the logo is publicly served', async () => {
     const { admin } = await setup();
-    const res = await admin
-      .put('/api/library/settings')
-      .send({
-        name: 'City Central Library',
-        cardColours: ['#c0263a', '#111827'],
-        logo: PNG_DATA_URL,
-      });
+    const res = await admin.put('/api/library/settings').send({
+      name: 'City Central Library',
+      cardColours: ['#c0263a', '#111827'],
+      logo: PNG_DATA_URL,
+    });
     expect(res.status).toBe(200);
     expect(res.body).toMatchObject({
       name: 'City Central Library',

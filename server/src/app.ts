@@ -10,6 +10,8 @@ import { authRoutes } from './modules/auth/routes';
 import { branchRoutes } from './modules/branches/routes';
 import { adminLibraryRoutes, libraryRoutes } from './modules/libraries/routes';
 import { platformPlanRoutes } from './modules/platformPlans/routes';
+import { bookRoutes, copyRoutes } from './modules/books/routes';
+import { catalogRoutes } from './modules/catalog/routes';
 import { couponRoutes } from './modules/coupons/routes';
 import { fileRoutes } from './modules/files/routes';
 import { librarySettingsRoutes, publicLibraryRoutes } from './modules/librarySettings/routes';
@@ -17,8 +19,9 @@ import { joinRoutes, memberRoutes, verificationRoutes } from './modules/members/
 import { membershipPlanRoutes } from './modules/membershipPlans/routes';
 import { staffRoutes } from './modules/staff/routes';
 
-// Routes that accept files as data URLs get a larger body limit.
+// Routes that accept files (as data URLs) or CSV get a larger body limit.
 const UPLOAD_PATHS = ['/api/members/join', '/api/member/id-proof', '/api/library/settings'];
+const isUpload = (path: string) => UPLOAD_PATHS.includes(path) || path.startsWith('/api/books');
 
 export function createApp() {
   const app = express();
@@ -31,9 +34,7 @@ export function createApp() {
   // mounted above this line in Phase 5.
   const smallJson = express.json({ limit: '1mb' });
   const uploadJson = express.json({ limit: '8mb' });
-  app.use((req, res, next) =>
-    (UPLOAD_PATHS.includes(req.path) ? uploadJson : smallJson)(req, res, next),
-  );
+  app.use((req, res, next) => (isUpload(req.path) ? uploadJson : smallJson)(req, res, next));
 
   app.get('/api/health', (_req, res) => {
     const body: HealthResponse = {
@@ -55,6 +56,9 @@ export function createApp() {
   app.use('/api/membership-plans', membershipPlanRoutes);
   app.use('/api/coupons', couponRoutes);
   app.use('/api/members', joinRoutes);
+  app.use('/api/books', bookRoutes);
+  app.use('/api/copies', copyRoutes);
+  app.use('/api/member/catalog', catalogRoutes);
   app.use('/api/member', memberRoutes);
   app.use('/api/verifications', verificationRoutes);
   app.use('/api/files', fileRoutes);

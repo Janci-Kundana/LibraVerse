@@ -17,6 +17,7 @@ const NAV: Record<Role, NavItem[]> = {
   libraryAdmin: [
     { to: '/library', label: 'Dashboard' },
     { to: '/library/verifications', label: 'ID verification' },
+    { to: '/library/catalog', label: 'Catalog' },
     { to: '/library/plans', label: 'Plans & coupons' },
     { to: '/library/branches', label: 'Branches' },
     { to: '/library/staff', label: 'Staff' },
@@ -26,9 +27,14 @@ const NAV: Record<Role, NavItem[]> = {
   librarian: [
     { to: '/library', label: 'Dashboard' },
     { to: '/library/verifications', label: 'ID verification' },
+    { to: '/library/catalog', label: 'Catalog' },
     { to: '/library/security', label: 'Security' },
   ],
-  member: [{ to: '/member', label: 'Home' }],
+  member: [
+    { to: '/member', label: 'Home' },
+    { to: '/member/catalog', label: 'Catalog' },
+    { to: '/member/wishlist', label: 'Wishlist' },
+  ],
 };
 
 const ROLE_TITLES: Record<Role, string> = {
@@ -60,7 +66,7 @@ export function DashboardLayout() {
             <NavLink
               key={item.to}
               to={item.to}
-              end
+              end={item.to === '/library' || item.to === '/member' || item.to === '/admin'}
               className={({ isActive }) =>
                 `whitespace-nowrap rounded-lg px-3 py-2 text-sm ${isActive ? 'bg-gray-800 text-white' : 'text-gray-400 hover:text-gray-100'}`
               }
