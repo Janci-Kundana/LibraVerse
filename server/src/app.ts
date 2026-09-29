@@ -1,0 +1,44 @@
+import express from 'express';
+import cors from 'cors';
+import helmet from 'helmet';
+import cookieParser from 'cookie-parser';
+import type { HealthResponse } from '@libraverse/shared';
+import { env } from './config/env';
+import { dbState } from './core/db';
+import { errorHandler, notFound } from './core/errors';
+import { authRoutes } from './modules/auth/routes';
+import { branchRoutes } from './modules/branches/routes';
+import { adminLibraryRoutes, libraryRoutes } from './modules/libraries/routes';
+import { platformPlanRoutes } from './modules/platformPlans/routes';
+
+export function createApp() {
+  const app = express();
+
+  app.disable('x-powered-by');
+  app.use(helmet());
+  app.use(cors({ origin: env.CLIENT_URL, credentials: true }));
+  app.use(cookieParser());
+  // Razorpay webhooks need the raw body for signature checks; they will be
+  // mounted above this line in Phase 5.
+  app.use(express.json({ limit: '1mb' }));
+
+  app.get('/api/health', (_req, res) => {
+    const body: HealthResponse = {
+      status: 'ok',
+      db: dbState(),
+      uptimeSeconds: Math.round(process.uptime()),
+    };
+    res.json(body);
+  });
+
+  app.use('/api/auth', authRoutes);
+  app.use('/api/platform-plans', platformPlanRoutes);
+  app.use('/api/libraries', libraryRoutes);
+  app.use('/api/admin/libraries', adminLibraryRoutes);
+  app.use('/api/branches', branchRoutes);
+
+  app.use(notFound);
+  app.use(errorHandler);
+
+  return app;
+}

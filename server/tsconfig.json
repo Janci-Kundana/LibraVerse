@@ -1,0 +1,10 @@
+{
+  "extends": "../tsconfig.base.json",
+  "compilerOptions": {
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "types": ["node", "jest"],
+    "noEmit": true
+  },
+  "include": ["src", "tests", "jest.config.js", "tsup.config.ts"]
+}
