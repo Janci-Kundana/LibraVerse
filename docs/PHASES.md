@@ -74,4 +74,4 @@ Status: **approved 2026-09-29**. Each phase ends with green tests, run instructi
 - [x] Phase 6: 3D card and PWA (2026-09-30)
 - [x] Phase 7: SaaS billing, donations, notifications, events (2026-09-30)
 - [x] Phase 8: Reports, analytics, AI, Google login (2026-09-30)
-- [x] Phase 9: Hardening and deploy (2026-09-30). Remaining manual items: TC-12 on a real phone, live Razorpay/SMTP/Cloudinary/Google/Anthropic credentials, and the actual Render + Vercel deployment.
+- [x] Phase 9: Hardening and deploy (2026-09-30). Deployed on 2026-09-30: web app https://libraverse.vercel.app (Vercel, proxies `/api`), API https://libraverse-xiaz.onrender.com (Render free plan, sleeps when idle), MongoDB Atlas. Gmail SMTP, Cloudinary, Google sign-in (OAuth app in Testing: listed test users only) and Razorpay test mode are live; Anthropic is not set (paid), so AI chat is off and the guide shows its built-in steps. TC-12 passed on a real phone over https (camera scan → member details, overdue block).

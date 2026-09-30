@@ -280,7 +280,8 @@ export function DashboardLayout() {
             </button>
           </div>
         </header>
-        <main className="mx-auto w-full max-w-7xl px-4 py-7 md:px-8">
+        {/* pb-28: room below the last control, so the floating guide button never covers it */}
+        <main className="mx-auto w-full max-w-7xl px-4 pt-7 pb-28 md:px-8">
           <motion.div
             key={location.pathname}
             initial={{ opacity: 0, y: 10 }}
