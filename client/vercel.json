@@ -6,7 +6,7 @@
   "rewrites": [
     {
       "source": "/api/:path*",
-      "destination": "https://libraverse-api.onrender.com/api/:path*"
+      "destination": "https://libraverse-xiaz.onrender.com/api/:path*"
     },
     {
       "source": "/((?!api/|assets/|sw.js|workbox-|manifest.webmanifest|push-sw.js|pwa-|apple-touch-icon).*)",
