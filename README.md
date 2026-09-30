@@ -82,4 +82,12 @@ Razorpay webhooks must reach the API: in development use a tunnel (for example `
 
 ## Screenshots
 
-Add screenshots of the landing page, counter, 3D card reveal, payment success and dashboards to `docs/screenshots/` once the app is running with your data.
+Captured from the demo data (`npm run seed:demo -w server`).
+
+|                                                                                   |                                                                                                          |
+| --------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------- |
+| ![Landing](docs/screenshots/01-landing.png) Landing                               | ![Sign in](docs/screenshots/02-login.png) One sign-in page for every role                                |
+| ![3D card](docs/screenshots/06-3d-card.png) 3D membership card (Gold tier)        | ![Counter](docs/screenshots/09-counter-blocked.png) Counter: card scanned, issue blocked with the reason |
+| ![Library dashboard](docs/screenshots/04-library-dashboard.png) Library dashboard | ![Platform analytics](docs/screenshots/03-platform-analytics.png) Super Admin analytics                  |
+| ![Catalog](docs/screenshots/05-catalog.png) Staff catalog                         | ![Member catalog](docs/screenshots/07-member-catalog.png) Member search and filters                      |
+| ![My books](docs/screenshots/08-my-books.png) Member's loans and fines            | ![Verification pending](docs/screenshots/10-verification-pending.png) Waiting for ID approval            |

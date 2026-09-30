@@ -53,13 +53,17 @@ export function MyLoansPage() {
         {d.current.map((l) => (
           <Card key={l.id} className="flex flex-wrap items-center justify-between gap-3">
             <LoanSummary loan={l} />
-            <Button
-              variant="secondary"
-              busy={renew.isPending && renew.variables === l.id}
-              onClick={() => renew.mutate(l.id)}
-            >
-              Renew
-            </Button>
+            {l.overdueDays > 0 ? (
+              <p className="text-sm text-gray-400">Overdue: please return it</p>
+            ) : (
+              <Button
+                variant="secondary"
+                busy={renew.isPending && renew.variables === l.id}
+                onClick={() => renew.mutate(l.id)}
+              >
+                Renew
+              </Button>
+            )}
           </Card>
         ))}
       </div>
@@ -85,6 +89,7 @@ export function MyLoansPage() {
       </div>
 
       <h2 className="mt-8 text-lg font-semibold">History</h2>
+      {d.history.length === 0 && <p className="text-sm text-gray-400">No returned books yet.</p>}
       <ul className="mt-2 divide-y divide-gray-800">
         {d.history.map((l) => (
           <li key={l.id} className="py-2">

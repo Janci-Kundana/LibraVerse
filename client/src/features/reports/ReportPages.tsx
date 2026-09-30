@@ -114,8 +114,10 @@ function AdminDashboard() {
           title="Revenue by month (net of refunds)"
           data={d.data.revenueByMonth.map((r) => ({ label: monthLabel(r.month), value: r.value }))}
           format={compactRupees}
+          minScale={100_000}
         />
         <BarChart
+          integer
           title="Books issued per day, last 30 days"
           data={d.data.loansByDay.map((r) => ({ label: r.day.slice(8), value: r.value }))}
           tickEvery={5}
@@ -315,10 +317,12 @@ export function PlatformAnalyticsPage() {
       <div className="mt-6 grid gap-4 lg:grid-cols-2">
         <BarChart
           title="Subscription revenue by month"
+          minScale={100_000}
           data={d.data.revenueByMonth.map((r) => ({ label: monthLabel(r.month), value: r.value }))}
           format={compactRupees}
         />
         <BarChart
+          integer
           title="New library registrations by month"
           data={d.data.newLibrariesByMonth.map((r) => ({
             label: monthLabel(r.month),

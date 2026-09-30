@@ -200,7 +200,8 @@ async function main() {
           memberId: member._id,
           issuedBy: owner._id,
           issuedAt: new Date(Date.now() - 17 * DAY),
-          dueAt: new Date(Date.now() - 3 * DAY),
+          // Due 3 days ago (an hour short, so it reads "3 days overdue" all day).
+          dueAt: new Date(Date.now() - 3 * DAY + 60 * 60 * 1000),
           finePerDay: silver!.finePerDay,
         });
         await BookModel.updateOne({ _id: overdueCopy.bookId }, { $inc: { borrowCount: 1 } });

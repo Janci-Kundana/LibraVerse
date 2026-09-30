@@ -62,4 +62,4 @@ Status: **approved 2026-09-29**. Each phase ends with green tests, run instructi
 - [x] Phase 6: 3D card and PWA (2026-09-30)
 - [x] Phase 7: SaaS billing, donations, notifications, events (2026-09-30)
 - [x] Phase 8: Reports, analytics, AI, Google login (2026-09-30)
-- [x] Phase 9: Hardening and deploy (2026-09-30). Remaining manual items: README screenshots, TC-12 on a real phone, live Razorpay/SMTP/Cloudinary/Google/Anthropic credentials, and the actual Render + Vercel deployment.
+- [x] Phase 9: Hardening and deploy (2026-09-30). Remaining manual items: TC-12 on a real phone, live Razorpay/SMTP/Cloudinary/Google/Anthropic credentials, and the actual Render + Vercel deployment.

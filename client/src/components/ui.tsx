@@ -145,6 +145,10 @@ export function StatusPill({
     gray: 'bg-gray-800 text-gray-400',
   }[tone];
   return (
-    <span className={`rounded-full px-2 py-0.5 text-xs capitalize ${styles}`}>{children}</span>
+    <span
+      className={`inline-block rounded-full px-2 py-0.5 text-xs first-letter:uppercase ${styles}`}
+    >
+      {children}
+    </span>
   );
 }

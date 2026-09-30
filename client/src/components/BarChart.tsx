@@ -16,12 +16,18 @@ export function BarChart({
   format = String,
   tickEvery = 1,
   height = 180,
+  minScale = 1,
+  integer = false,
 }: {
   title: string;
   data: BarDatum[];
   format?: (v: number) => string;
   tickEvery?: number;
   height?: number;
+  /** smallest top of the axis, so an all-zero series still gets sensible ticks */
+  minScale?: number;
+  /** counts: keep every tick a whole number */
+  integer?: boolean;
 }) {
   const [hover, setHover] = useState<number | null>(null);
   const id = useId();
@@ -29,8 +35,9 @@ export function BarChart({
   const pad = { top: 12, right: 8, bottom: 22, left: 48 };
   const plotW = W - pad.left - pad.right;
   const plotH = height - pad.top - pad.bottom;
-  const max = Math.max(1, ...data.map((d) => d.value));
-  const niceMax = niceCeil(max);
+  const max = Math.max(minScale, integer ? 2 : 0, ...data.map((d) => d.value));
+  let niceMax = niceCeil(max);
+  if (integer && niceMax % 2 !== 0) niceMax += 1;
   const step = plotW / Math.max(1, data.length);
   const gap = 2;
   const barW = Math.max(1, step - gap);
