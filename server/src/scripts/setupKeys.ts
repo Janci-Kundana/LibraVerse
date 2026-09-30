@@ -98,7 +98,12 @@ async function main() {
     await secret(`   CLOUDINARY_URL (cloudinary://…)${has('CLOUDINARY_URL')}: `)
   ).replace(/^CLOUDINARY_URL=/, '');
   if (cloud) {
-    if (/^cloudinary:\/\/[^:]+:[^@]+@.+$/.test(cloud)) env = setValue(env, 'CLOUDINARY_URL', cloud);
+    if (/[<>*]|your_api/i.test(cloud))
+      console.log(
+        '   That is the example line with placeholders. Use Settings → API Keys for the real key and secret; skipped.',
+      );
+    else if (/^cloudinary:\/\/\d+:[^@]+@.+$/.test(cloud))
+      env = setValue(env, 'CLOUDINARY_URL', cloud);
     else console.log('   That does not look like cloudinary://<key>:<secret>@<cloud>; skipped.');
   }
 
