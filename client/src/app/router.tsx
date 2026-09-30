@@ -39,6 +39,7 @@ import { NotFoundPage } from '../features/landing/NotFoundPage';
 import { RegisterLibraryPage } from '../features/libraries/RegisterLibraryPage';
 import { BranchesPage } from '../features/library/BranchesPage';
 import { MembersPage } from '../features/library/MembersPage';
+import { DepositRefundsPage } from '../features/library/DepositRefundsPage';
 import { PlansPage } from '../features/library/PlansPage';
 import { SettingsPage } from '../features/library/SettingsPage';
 import { StaffPage } from '../features/library/StaffPage';
@@ -90,6 +91,7 @@ export const routes: RouteObject[] = [
       { path: 'counter', element: <CounterPage /> },
       { path: 'loans', element: <LoansPage /> },
       { path: 'members', element: <MembersPage /> },
+      { path: 'deposit-refunds', element: <DepositRefundsPage /> },
       { path: 'payments', element: <PaymentsPage /> },
       { path: 'donations', element: <DonationsPage /> },
       { path: 'events', element: <StaffEventsPage /> },

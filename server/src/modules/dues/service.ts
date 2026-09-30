@@ -181,6 +181,7 @@ export async function deductFromDeposit(
   key: string,
   now = new Date(),
   actor: Actor = null,
+  opts: { reason?: string; sendEmail?: boolean } = {},
 ) {
   const profile = await MemberProfileModel.findOne({ userId: memberId }).lean();
   if (!profile || profile.dues?.lastDeductionKey === key)
@@ -216,7 +217,7 @@ export async function deductFromDeposit(
       balanceAfter: claimed.depositBalance,
       dueBefore,
       dueAfter,
-      reason: 'Unpaid dues after three warnings',
+      reason: opts.reason ?? 'Unpaid dues after three warnings',
       loanIds,
       idempotencyKey: `deduction:${key}`,
     });
@@ -231,7 +232,7 @@ export async function deductFromDeposit(
   if (dueAfter === 0) await closeCycleIfPaid(memberId, 'deduction');
 
   const settings = await circulationSettings(libraryId);
-  const r = await recipient(libraryId, memberId);
+  const r = opts.sendEmail === false ? null : await recipient(libraryId, memberId);
   if (r) {
     await notify(
       r.to,

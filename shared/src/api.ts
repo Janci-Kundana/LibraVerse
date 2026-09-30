@@ -422,7 +422,7 @@ export type DueStatus = 'none' | 'pending' | 'deductionScheduled' | 'deducted' |
 
 export interface DepositTransactionDto {
   id: string;
-  type: 'collected' | 'deduction';
+  type: 'collected' | 'deduction' | 'refund';
   amount: number;
   balanceAfter: number;
   dueBefore: number | null;
@@ -468,4 +468,38 @@ export interface MemberRowDto {
   cardStatus: CardStatus;
   dueStatus: DueStatus;
   hasPhoto: boolean;
+}
+
+export type DepositRefundStatus = 'requested' | 'completed' | 'rejected' | 'cancelled';
+export type RefundMethod = 'cash' | 'razorpay';
+
+/** A deposit refund as the member sees it (with a live preview while requested). */
+export interface DepositRefundDto {
+  status: DepositRefundStatus | null;
+  requestedAt: string | null;
+  decidedAt: string | null;
+  method: RefundMethod | null;
+  /** refunded (completed) or expected (preview): deposit minus unpaid dues */
+  amount: number;
+  depositBalance: number;
+  outstandingDues: number;
+  activeLoans: number;
+  /** why a request is not possible right now, if it is not */
+  blockedReason: string | null;
+  note: string | null;
+}
+
+/** A row in the staff refund queue. */
+export interface DepositRefundRequestDto {
+  profileId: string;
+  name: string;
+  email: string;
+  requestedAt: string;
+  reason: string | null;
+  depositBalance: number;
+  outstandingDues: number;
+  refundable: number;
+  activeLoans: number;
+  /** most that can go back through Razorpay (deposit paid online, not yet refunded) */
+  razorpayRefundable: number;
 }

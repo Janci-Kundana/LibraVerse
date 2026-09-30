@@ -354,6 +354,8 @@ async function applySuccess(libraryId: string, payment: PaymentDoc) {
         expiryReminderAt: null,
         // Shown once as a celebration, only after a confirmed payment.
         celebratePaymentId: payment._id,
+        // Rejoining after a deposit refund reopens the membership.
+        membershipClosedAt: null,
       });
       await profile.save();
       await collectDeposit(payment.memberId, payment.depositAmount ?? 0, payment._id);

@@ -7,7 +7,8 @@ const depositTransactionSchema = new Schema(
   {
     libraryId: libraryIdPath,
     memberId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
-    type: { type: String, enum: ['collected', 'deduction'], required: true },
+    type: { type: String, enum: ['collected', 'deduction', 'refund'], required: true },
+    method: { type: String, enum: ['cash', 'razorpay', null], default: null }, // refunds only
     amount: { type: Number, required: true, min: 0 }, // paise
     balanceAfter: { type: Number, required: true, min: 0 },
     dueBefore: { type: Number, default: null },

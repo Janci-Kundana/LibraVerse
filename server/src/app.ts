@@ -17,6 +17,7 @@ import { assistantRoutes } from './modules/assistant/routes';
 import { bookRoutes, copyRoutes } from './modules/books/routes';
 import { auditRoutes, platformReportRoutes, reportRoutes } from './modules/reports/routes';
 import { donationRoutes, publicDonationRoutes } from './modules/donations/routes';
+import { memberRefundRoutes, staffRefundRoutes } from './modules/dues/routes';
 import { eventRoutes, memberEventRoutes } from './modules/events/routes';
 import { notificationRoutes } from './modules/notifications/routes';
 import { registerInAppChannel } from './modules/notifications/service';
@@ -94,6 +95,8 @@ export function createApp() {
   app.use('/api/copies', copyRoutes);
   app.use('/api/member/catalog', catalogRoutes);
   app.use('/api/circulation', circulationRoutes);
+  app.use('/api/member/deposit-refund', memberRefundRoutes);
+  app.use('/api/deposit-refunds', staffRefundRoutes);
   app.use('/api/library/payment-settings', paymentSettingsRoutes);
   app.use('/api/payments', staffPaymentRoutes);
   app.use('/api/member/payments', memberPaymentRoutes);

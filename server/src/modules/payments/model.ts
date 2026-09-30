@@ -14,6 +14,8 @@ const paymentSchema = new Schema(
     discount: { type: Number, default: 0 },
     // Part of `amount` that tops the member's security deposit up (membership only).
     depositAmount: { type: Number, default: 0, min: 0 },
+    // How much of that deposit has been returned through Razorpay refunds.
+    depositRefunded: { type: Number, default: 0, min: 0 },
     couponCode: { type: String, default: null },
     planId: { type: Schema.Types.ObjectId, ref: 'MembershipPlan', default: null },
     loanIds: { type: [Schema.Types.ObjectId], default: [] },

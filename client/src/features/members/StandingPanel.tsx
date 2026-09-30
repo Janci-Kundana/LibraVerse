@@ -4,6 +4,7 @@ import type { DueStatus, MemberProfileDto, MemberStandingDto } from '@libraverse
 import { Button, Card, ErrorText, StatusPill } from '../../components/ui';
 import { api, errorMessage, post } from '../../lib/api';
 import { formatDate, readFileAsDataUrl, rupees } from '../../lib/format';
+import { DepositRefundCard } from './DepositRefund';
 
 const DUE_LABEL: Record<DueStatus, { text: string; tone: 'green' | 'yellow' | 'red' | 'gray' }> = {
   none: { text: 'No dues', tone: 'green' },
@@ -61,6 +62,7 @@ export function StandingPanel() {
           blocked. Pay it on My books to unblock it.
         </p>
       )}
+      <DepositRefundCard />
       {d.history.length > 0 && (
         <details className="mt-3 text-sm">
           <summary className="cursor-pointer text-gray-300">Deposit history</summary>
@@ -69,7 +71,11 @@ export function StandingPanel() {
               <li key={t.id} className="flex flex-wrap justify-between gap-2 py-2">
                 <span>
                   {formatDate(t.createdAt)} ·{' '}
-                  {t.type === 'collected' ? 'Deposit paid' : 'Deducted for dues'}
+                  {t.type === 'collected'
+                    ? 'Deposit paid'
+                    : t.type === 'refund'
+                      ? 'Deposit refunded'
+                      : 'Deducted for dues'}
                   {t.dueBefore != null && (
                     <span className="text-gray-500">
                       {' '}
@@ -77,8 +83,8 @@ export function StandingPanel() {
                     </span>
                   )}
                 </span>
-                <span className={t.type === 'deduction' ? 'text-red-300' : 'text-emerald-300'}>
-                  {t.type === 'deduction' ? '−' : '+'}
+                <span className={t.type === 'collected' ? 'text-emerald-300' : 'text-red-300'}>
+                  {t.type === 'collected' ? '+' : '−'}
                   {rupees(t.amount)} · balance {rupees(t.balanceAfter)}
                 </span>
               </li>

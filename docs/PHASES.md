@@ -56,6 +56,7 @@ Status: **approved 2026-09-29**. Each phase ends with green tests, run instructi
   - Standing is derived, never set by a client: card `active | expired | blocked | none | unverified` (expired wins), dues `none | pending | deductionScheduled | deducted | blocked | paid`. Blocked = deposit 0 after a deduction with dues still owed; paying clears it. Borrowing is still refused with any dues or overdue book (TC-05).
   - Card: front = name, photo, QR, library branding; back = card number, library logo and name (from the member's library record). Profile photos are private (member and that library's staff only).
   - Celebration shown once after a confirmed membership payment (`celebratePaymentId`).
+  - Deposit refund: the member requests (all books returned, something left after dues); staff approve in cash or via Razorpay (only up to the deposit paid online, refunded to those payments, Razorpay called before the deposit changes). Unpaid dues are deducted first, so an empty deposit refunds nothing. Approval closes the membership (no plan, card stops working); rejoining charges the full deposit again. Staff can also refund at the counter. Each refund runs once (the request is claimed atomically).
   - Pending: how a Library Assistant is assigned to a new member (to be decided with the user).
 - Mongoose is pinned to **v8** (MongoDB driver 6). With Mongoose 9 / driver 7, the connection handshake fails inside Jest's VM sandbox ("Missing required sub-document 'driver' in the client metadata document"), although it works in plain Node. Revisit when upgrading.
 

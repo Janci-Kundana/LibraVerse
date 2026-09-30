@@ -46,6 +46,31 @@ const memberProfileSchema = new Schema(
       ),
       default: () => ({}),
     },
+    // Deposit refund: the member asks, staff approve (cash or Razorpay), and the
+    // membership closes. Only what is left after dues is refunded.
+    depositRefund: {
+      type: new Schema(
+        {
+          status: {
+            type: String,
+            enum: ['requested', 'completed', 'rejected', 'cancelled'],
+            required: true,
+          },
+          requestedAt: { type: Date, required: true },
+          requestedBy: { type: String, enum: ['member', 'staff'], required: true },
+          reason: { type: String, default: null },
+          decidedBy: { type: Schema.Types.ObjectId, ref: 'User', default: null },
+          decidedAt: { type: Date, default: null },
+          method: { type: String, enum: ['cash', 'razorpay', null], default: null },
+          amount: { type: Number, default: null },
+          duesSettled: { type: Number, default: null },
+          note: { type: String, default: null },
+        },
+        { _id: false },
+      ),
+      default: null,
+    },
+    membershipClosedAt: { type: Date, default: null },
     // A confirmed membership payment the member has not yet seen celebrated.
     celebratePaymentId: { type: Schema.Types.ObjectId, ref: 'Payment', default: null },
     badges: { type: [String], default: [] },

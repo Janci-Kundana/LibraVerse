@@ -1,8 +1,8 @@
 import { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
-import type { CardStatus, DueStatus, MemberRowDto } from '@libraverse/shared';
-import { Field, PageHeader, StatusPill } from '../../components/ui';
-import { api } from '../../lib/api';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import type { CardStatus, DueStatus, MemberRowDto, RefundMethod } from '@libraverse/shared';
+import { Button, Card, ErrorText, Field, PageHeader, StatusPill } from '../../components/ui';
+import { api, errorMessage, post } from '../../lib/api';
 import { formatDate, rupees } from '../../lib/format';
 
 const CARD_TONE: Record<CardStatus, 'green' | 'red' | 'yellow' | 'gray'> = {
@@ -23,7 +23,17 @@ const DUE_TEXT: Record<DueStatus, string> = {
 
 /** Staff: every member with dues, deposit and card status (derived on the server). */
 export function MembersPage() {
+  const qc = useQueryClient();
   const [q, setQ] = useState('');
+  const [refunding, setRefunding] = useState<MemberRowDto | null>(null);
+  const refund = useMutation({
+    mutationFn: ({ id, method }: { id: string; method: RefundMethod }) =>
+      post<{ amount: number }>(`/api/deposit-refunds/${id}/refund`, { method }),
+    onSuccess: () => {
+      setRefunding(null);
+      return qc.invalidateQueries({ queryKey: ['library'] });
+    },
+  });
   const list = useQuery({
     queryKey: ['library', 'members', q],
     queryFn: () => api<MemberRowDto[]>(`/api/members?q=${encodeURIComponent(q)}`),
@@ -47,6 +57,7 @@ export function MembersPage() {
               <th className="pr-3 text-right">Dues</th>
               <th className="pr-3 text-right">Deposit</th>
               <th>Status</th>
+              <th />
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-800">
@@ -91,11 +102,55 @@ export function MembersPage() {
                     </StatusPill>
                   )}
                 </td>
+                <td className="pl-2 text-right">
+                  {m.depositBalance > 0 && m.cardStatus !== 'none' && (
+                    <button
+                      type="button"
+                      onClick={() => setRefunding(m)}
+                      className="whitespace-nowrap text-xs text-brand-500 hover:underline"
+                    >
+                      Refund deposit
+                    </button>
+                  )}
+                </td>
               </tr>
             ))}
           </tbody>
         </table>
         {list.data?.length === 0 && <p className="mt-4 text-gray-400">No members found.</p>}
+        {refunding && (
+          <Card className="mt-4">
+            <p className="font-medium">
+              Refund {refunding.name}’s deposit and close the membership?
+            </p>
+            <p className="mt-1 text-sm text-gray-400">
+              Deposit {rupees(refunding.depositBalance)}
+              {refunding.outstandingDues > 0 &&
+                ` − unpaid dues ${rupees(refunding.outstandingDues)}`}{' '}
+              = refund {rupees(Math.max(0, refunding.depositBalance - refunding.outstandingDues))}.
+              Books on loan must be returned first.
+            </p>
+            <div className="mt-3 flex flex-wrap gap-2">
+              <Button
+                busy={refund.isPending}
+                onClick={() => refund.mutate({ id: refunding.profileId, method: 'cash' })}
+              >
+                Refund in cash
+              </Button>
+              <Button
+                variant="secondary"
+                busy={refund.isPending}
+                onClick={() => refund.mutate({ id: refunding.profileId, method: 'razorpay' })}
+              >
+                Refund via Razorpay
+              </Button>
+              <Button variant="secondary" onClick={() => setRefunding(null)}>
+                Cancel
+              </Button>
+            </div>
+            <ErrorText>{refund.error ? errorMessage(refund.error) : ''}</ErrorText>
+          </Card>
+        )}
       </div>
     </div>
   );
