@@ -96,32 +96,63 @@ export function StandingPanel() {
   );
 }
 
-/** Upload or change the profile picture printed on the card. */
+/**
+ * The card photo. Before the ID is approved it can be replaced directly; after
+ * that a new photo is a request that staff approve (the card keeps the current
+ * one until then).
+ */
 export function PhotoUploader({ profile }: { profile: MemberProfileDto }) {
   const qc = useQueryClient();
   const [file, setFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
+  const approved = profile.verificationStatus === 'approved';
+  const change = profile.photoChange;
   const upload = useMutation({
-    mutationFn: async () => post('/api/member/photo', { photo: await readFileAsDataUrl(file!) }),
+    mutationFn: async () =>
+      post<MemberProfileDto>('/api/member/photo', { photo: await readFileAsDataUrl(file!) }),
     onSuccess: () => {
       setFile(null);
+      setPreview(null);
+      // Profile, and the card (on Home and My card) once a photo is live.
       return qc.invalidateQueries({ queryKey: ['member'] });
     },
   });
   return (
     <Card className="mt-4 max-w-xl">
-      <div className="flex items-center gap-4">
-        <img
-          src={preview ?? `/api/member/photo?v=${profile.id}`}
-          alt=""
-          className="h-20 w-16 rounded-lg bg-gray-800 object-cover"
-          onError={(e) => ((e.target as HTMLImageElement).style.visibility = 'hidden')}
-        />
-        <div className="flex-1">
+      <div className="flex flex-wrap items-center gap-4">
+        <div className="flex gap-2">
+          <img
+            src={`/api/member/photo?v=${profile.id}-${String(profile.hasPhoto)}`}
+            alt="Current card photo"
+            className="h-20 w-16 rounded-lg bg-gray-800 object-cover"
+            onError={(e) => ((e.target as HTMLImageElement).style.visibility = 'hidden')}
+          />
+          {(preview || change?.status === 'pending') && (
+            <img
+              src={preview ?? `/api/member/photo/pending?v=${change?.requestedAt ?? ''}`}
+              alt="New photo"
+              className="h-20 w-16 rounded-lg bg-gray-800 object-cover ring-2 ring-amber-300/60"
+            />
+          )}
+        </div>
+        <div className="min-w-0 flex-1">
           <p className="font-medium">Card photo</p>
           <p className="text-sm text-gray-400">
-            Shown on your membership card and to library staff when they scan it.
+            {approved
+              ? 'Shown on your card and to staff when they scan it. A new photo needs staff approval.'
+              : 'Shown on your card and to staff when they scan it.'}
           </p>
+          {change?.status === 'pending' && (
+            <p className="mt-2">
+              <StatusPill tone="yellow">New photo waiting for staff approval</StatusPill>
+            </p>
+          )}
+          {change?.status === 'rejected' && (
+            <p className="mt-2 text-sm text-red-300">
+              Your new photo was not approved: {change.note ?? 'no reason given'}. You can upload
+              another.
+            </p>
+          )}
           <input
             type="file"
             aria-label="Card photo"
@@ -135,7 +166,7 @@ export function PhotoUploader({ profile }: { profile: MemberProfileDto }) {
           />
         </div>
         <Button disabled={!file} busy={upload.isPending} onClick={() => upload.mutate()}>
-          Save photo
+          {approved ? 'Send for approval' : 'Save photo'}
         </Button>
       </div>
       <ErrorText>{upload.error ? errorMessage(upload.error) : ''}</ErrorText>

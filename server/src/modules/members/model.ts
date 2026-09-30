@@ -75,6 +75,34 @@ const memberProfileSchema = new Schema(
     celebratePaymentId: { type: Schema.Types.ObjectId, ref: 'Payment', default: null },
     badges: { type: [String], default: [] },
     wishlist: { type: [Schema.Types.ObjectId], ref: 'Book', default: [] },
+    // A different plan bought while one is running: it takes over when the
+    // current period ends (validTill already includes its days).
+    nextPlan: {
+      type: new Schema(
+        {
+          planId: { type: Schema.Types.ObjectId, ref: 'MembershipPlan', required: true },
+          startsAt: { type: Date, required: true },
+          paymentId: { type: Schema.Types.ObjectId, ref: 'Payment', default: null },
+        },
+        { _id: false },
+      ),
+      default: null,
+    },
+    // After approval the card photo changes only with staff approval.
+    photoChange: {
+      type: new Schema(
+        {
+          key: { type: String, required: true }, // private file, like photoKey
+          status: { type: String, enum: ['pending', 'rejected'], required: true },
+          requestedAt: { type: Date, required: true },
+          note: { type: String, default: null },
+          decidedBy: { type: Schema.Types.ObjectId, ref: 'User', default: null },
+          decidedAt: { type: Date, default: null },
+        },
+        { _id: false },
+      ),
+      default: null,
+    },
   },
   { timestamps: true },
 );
@@ -86,6 +114,8 @@ memberProfileSchema.index(
   { unique: true, partialFilterExpression: { membershipNo: { $type: 'string' } } },
 );
 memberProfileSchema.index({ libraryId: 1, verificationStatus: 1, idSubmittedAt: 1 });
+memberProfileSchema.index({ libraryId: 1, 'nextPlan.startsAt': 1 }, { sparse: true });
+memberProfileSchema.index({ libraryId: 1, 'photoChange.status': 1 }, { sparse: true });
 
 export type MemberProfile = InferSchemaType<typeof memberProfileSchema>;
 export const MemberProfileModel = model('MemberProfile', memberProfileSchema, 'memberProfiles');

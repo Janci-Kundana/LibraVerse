@@ -88,7 +88,14 @@ export function MembersPage() {
                     </div>
                   </div>
                 </td>
-                <td className="pr-3">{m.planName ?? '—'}</td>
+                <td className="pr-3">
+                  {m.planName ?? '—'}
+                  {m.nextPlan && (
+                    <span className="block text-xs text-gold-200">
+                      → {m.nextPlan.planName} from {formatDate(m.nextPlan.startsAt)}
+                    </span>
+                  )}
+                </td>
                 <td className="pr-3">{formatDate(m.validTill)}</td>
                 <td className={`pr-3 text-right ${m.outstandingDues ? 'text-red-300' : ''}`}>
                   {rupees(m.outstandingDues)}

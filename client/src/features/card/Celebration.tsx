@@ -100,9 +100,11 @@ export function MembershipCelebration() {
               animate={{ y: 0, opacity: 1 }}
               transition={{ delay: 0.2 }}
             >
-              {c.renewal
-                ? 'Congratulations! Your membership is renewed!'
-                : 'Congratulations! Your membership is active!'}
+              {c.startsAt
+                ? `Thank you! ${c.planName} starts on ${formatDate(c.startsAt)}`
+                : c.renewal
+                  ? 'Congratulations! Your membership is renewed!'
+                  : 'Congratulations! Your membership is active!'}
             </motion.h2>
 
             <motion.button
@@ -144,10 +146,17 @@ export function MembershipCelebration() {
                 <dt className="text-gray-400">Plan</dt>
                 <dd className="font-medium text-white">{c.planName}</dd>
               </div>
-              <div>
-                <dt className="text-gray-400">Card tier</dt>
-                <dd className="font-medium capitalize text-white">{c.tier}</dd>
-              </div>
+              {c.startsAt ? (
+                <div>
+                  <dt className="text-gray-400">Starts</dt>
+                  <dd className="font-medium text-white">{formatDate(c.startsAt)}</dd>
+                </div>
+              ) : (
+                <div>
+                  <dt className="text-gray-400">Card tier</dt>
+                  <dd className="font-medium capitalize text-white">{c.tier}</dd>
+                </div>
+              )}
               <div>
                 <dt className="text-gray-400">Valid till</dt>
                 <dd className="font-medium text-white">{formatDate(c.validTill)}</dd>

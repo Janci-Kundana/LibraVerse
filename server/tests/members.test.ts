@@ -22,6 +22,7 @@ const joinBody = {
   password: 'Meera-pass1',
   phone: '+91 98765 43210',
   idProof: PNG_DATA_URL,
+  photo: PNG_DATA_URL,
   acceptTerms: true,
 };
 

@@ -17,13 +17,14 @@ import { runAsSystem, runWithTenant } from '../../core/tenant';
 import { emitPaymentUpdated } from '../../realtime/io';
 import { recordAudit } from '../audit/service';
 import { verifyCardToken } from '../card/token';
-import { DAY_MS, rupees } from '../circulation/rules';
+import { rupees } from '../circulation/rules';
 import { findUsableCoupon } from '../coupons/service';
 import { closeCycleIfPaid, collectDeposit, depositShortfall } from '../dues/service';
 import { LibraryModel } from '../libraries/model';
 import { LoanModel } from '../loans/model';
 import { MemberProfileModel } from '../members/model';
 import { MembershipPlanModel } from '../membershipPlans/model';
+import { applyDuePlanChanges, applyMembership, assertPlanPurchasable } from '../members/planChange';
 import { UserModel } from '../users/model';
 import { callGateway, libraryGateway } from './gateway';
 import { PaymentModel, type Payment } from './model';
@@ -114,6 +115,13 @@ async function priceMembership(
     active: true,
   }).lean();
   if (!plan) throw notFound('Plan');
+  await applyDuePlanChanges(new Date(), memberId);
+  await assertPlanPurchasable(
+    await MemberProfileModel.findOne({ userId: memberId })
+      .select('planId validTill nextPlan')
+      .lean(),
+    plan,
+  );
   let discount = 0;
   let code: string | null = null;
   if (couponCode) {
@@ -344,13 +352,9 @@ async function applySuccess(libraryId: string, payment: PaymentDoc) {
     const plan = await MembershipPlanModel.findById(payment.planId).lean();
     const profile = await MemberProfileModel.findOne({ userId: payment.memberId });
     if (plan && profile) {
-      // Renewing early extends from the current end date.
-      const start = profile.validTill && profile.validTill > now ? profile.validTill : now;
+      // A different plan bought mid-period starts when the current one ends.
+      applyMembership(profile, plan, payment._id, now);
       profile.set({
-        planId: plan._id,
-        validTill: new Date(start.getTime() + plan.durationDays * DAY_MS),
-        currentPeriodStart: start,
-        cardTier: plan.tier,
         expiryReminderAt: null,
         // Shown once as a celebration, only after a confirmed payment.
         celebratePaymentId: payment._id,
@@ -383,14 +387,21 @@ async function applySuccess(libraryId: string, payment: PaymentDoc) {
     const profile =
       payment.purpose === 'membership'
         ? await MemberProfileModel.findOne({ userId: payment.memberId })
-            .select('validTill membershipNo depositBalance')
+            .select('validTill membershipNo depositBalance nextPlan')
             .lean()
+        : null;
+    const planName = data.description.replace(/^Membership: /, '');
+    const startsLater =
+      profile?.nextPlan && String(profile.nextPlan.planId) === String(payment.planId)
+        ? profile.nextPlan.startsAt
         : null;
     const membershipLines = profile
       ? [
-          `Congratulations! Your membership is active.`,
+          startsLater
+            ? `Thank you! Your ${planName} plan starts on ${startsLater.toLocaleDateString('en-IN', { dateStyle: 'medium' })}, when your current plan ends.`
+            : `Congratulations! Your membership is active.`,
           '',
-          `Plan: ${data.description.replace(/^Membership: /, '')}`,
+          `Plan: ${planName}`,
           `Valid till: ${profile.validTill?.toLocaleDateString('en-IN', { dateStyle: 'medium' }) ?? '-'}`,
           `Card number: ${profile.membershipNo?.replace(/(\d{4})(?=\d)/g, '$1 ') ?? '-'}`,
           ...(payment.depositAmount

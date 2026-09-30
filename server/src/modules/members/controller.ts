@@ -95,3 +95,28 @@ export const listMembers: RequestHandler = async (req, res) => {
     ),
   );
 };
+
+export const myPendingPhoto: RequestHandler = async (req, res) => {
+  await sendFile(res, await members.openMyPendingPhoto(req.auth!.userId));
+};
+
+export const listPhotoChanges: RequestHandler = async (_req, res) => {
+  res.json(await members.listPhotoChanges());
+};
+
+export const requestedPhoto: RequestHandler = async (req, res) => {
+  await sendFile(res, await members.openRequestedPhoto(String(req.params.profileId)));
+};
+
+export function decidePhoto(decision: 'approve' | 'reject'): RequestHandler {
+  return async (req, res) => {
+    await members.decidePhotoChange(
+      libraryOf(req),
+      String(req.params.profileId),
+      decision,
+      actorOf(req),
+      decision === 'reject' ? req.body.reason : undefined,
+    );
+    res.status(204).end();
+  };
+}

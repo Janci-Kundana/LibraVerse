@@ -297,9 +297,14 @@ describe('card scan shows fresh member details', () => {
         { $set: { phone: '+91 98765 43210', depositBalance: 50000 } },
       ),
     );
+    // An approved member's new photo waits for staff approval.
     expect((await m.agent.post('/api/member/photo').send({ photo: PNG_DATA_URL })).status).toBe(
       200,
     );
+    expect(
+      (await staff.post(`/api/verifications/photo-changes/${String(m.profile._id)}/approve`))
+        .status,
+    ).toBe(204);
 
     const res = await staff.post('/api/circulation/scan-member').send({ memberToken: m.token });
     expect(res.body).toMatchObject({
@@ -359,6 +364,7 @@ describe('card scan shows fresh member details', () => {
         .error.code,
     ).toBe('OTHER_LIBRARY_CARD');
     await ok.agent.post('/api/member/photo').send({ photo: PNG_DATA_URL });
+    await staff.post(`/api/verifications/photo-changes/${String(ok.profile._id)}/approve`);
     expect((await outsider.get(`/api/members/${ok.profile._id}/photo`)).status).toBe(404);
   });
 });

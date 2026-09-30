@@ -1,8 +1,7 @@
 import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import type { MemberProfileDto, MembershipPlanDto } from '@libraverse/shared';
+import type { MemberCardDto, MemberProfileDto, MembershipPlanDto } from '@libraverse/shared';
 import { Link } from 'react-router';
-import type { MemberCardDto } from '@libraverse/shared';
 import { Icon, type IconName } from '../../components/icons';
 import { Button, Card, ErrorText, PageSkeleton } from '../../components/ui';
 import { useCardFaces } from '../card/useCardFaces';
@@ -116,6 +115,11 @@ export function MemberHome() {
                 <>
                   <span className="font-semibold text-white">{p.planName}</span> · valid till{' '}
                   {formatDate(p.validTill)}
+                  {p.nextPlan && (
+                    <span className="mt-1 block text-sm text-gold-200">
+                      Then {p.nextPlan.planName} from {formatDate(p.nextPlan.startsAt)}
+                    </span>
+                  )}
                 </>
               ) : (
                 'No active membership plan yet. Pick one below to start borrowing.'
@@ -145,7 +149,7 @@ export function MemberHome() {
       </section>
       <PhotoUploader profile={p} />
       <StandingPanel />
-      <PlanList renewing={Boolean(p.planName)} />
+      <PlanList profile={p} />
       <section className="mt-10">
         <h2 className="text-lg font-semibold">Notifications</h2>
         <p className="mb-3 text-sm text-gray-400">Due dates, reserved books ready, payments.</p>
@@ -155,7 +159,35 @@ export function MemberHome() {
   );
 }
 
-function PlanList({ renewing }: { renewing: boolean }) {
+/**
+ * What buying this plan does now: plan changes take effect when the current
+ * period ends, and only one change can be waiting at a time.
+ */
+function planNote(plan: MembershipPlanDto, p: MemberProfileDto, now: number) {
+  const running = p.validTill != null && new Date(p.validTill).getTime() > now;
+  if (!running) return { blocked: false, note: null };
+  if (p.nextPlan) {
+    return plan.id === p.nextPlan.planId
+      ? {
+          blocked: false,
+          note: `Adds ${plan.durationDays} days to ${plan.name}, which starts ${formatDate(p.nextPlan.startsAt)}`,
+        }
+      : {
+          blocked: true,
+          note: `${p.nextPlan.planName} already starts on ${formatDate(p.nextPlan.startsAt)}. You can change again after that.`,
+        };
+  }
+  return plan.id === p.planId
+    ? { blocked: false, note: `Adds ${plan.durationDays} days after ${formatDate(p.validTill)}` }
+    : {
+        blocked: false,
+        note: `Starts ${formatDate(p.validTill)}, when your ${p.planName ?? 'current'} plan ends`,
+      };
+}
+
+function PlanList({ profile }: { profile: MemberProfileDto }) {
+  const renewing = Boolean(profile.planName);
+  const [now] = useState(() => Date.now());
   const plans = useQuery({
     queryKey: ['member', 'plans'],
     queryFn: () => api<MembershipPlanDto[]>('/api/member/plans'),
@@ -168,6 +200,7 @@ function PlanList({ renewing }: { renewing: boolean }) {
       <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {plans.data?.map((plan) => {
           const t = TIER_STYLE[plan.tier] ?? TIER_STYLE.member!;
+          const { blocked, note } = planNote(plan, profile, now);
           return (
             <div key={plan.id} className={`rounded-2xl bg-gradient-to-br p-px ${t.ring}`}>
               <div className="flex h-full flex-col rounded-[15px] bg-[#0b0f1e]/95 p-5">
@@ -194,12 +227,19 @@ function PlanList({ renewing }: { renewing: boolean }) {
                     </li>
                   ))}
                 </ul>
-                <div className="mt-5 pt-1">
-                  <PayButton
-                    charge={{ purpose: 'membership', planId: plan.id }}
-                    label={`Buy for ${rupees(plan.price)}`}
-                    withCoupon
-                  />
+                <div className="mt-auto pt-5">
+                  {note && (
+                    <p className={`mb-3 text-xs ${blocked ? 'text-gray-500' : 'text-gold-200'}`}>
+                      {note}
+                    </p>
+                  )}
+                  {!blocked && (
+                    <PayButton
+                      charge={{ purpose: 'membership', planId: plan.id }}
+                      label={`Buy for ${rupees(plan.price)}`}
+                      withCoupon
+                    />
+                  )}
                 </div>
               </div>
             </div>
@@ -217,11 +257,7 @@ export function VerificationPending({ profile }: { profile: MemberProfileDto }) 
   const resubmit = useMutation({
     mutationFn: async () =>
       post<MemberProfileDto>('/api/member/id-proof', { idProof: await readFileAsDataUrl(file!) }),
-    onSuccess: (p) => {
-      qc.setQueryData(PROFILE_KEY, p);
-      // Redraw the card (on Home and My card) with the new photo.
-      void qc.invalidateQueries({ queryKey: ['member', 'card'] });
-    },
+    onSuccess: (p) => qc.setQueryData(PROFILE_KEY, p),
   });
   const rejected = profile.verificationStatus === 'rejected';
 

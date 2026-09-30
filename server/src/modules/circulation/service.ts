@@ -8,6 +8,7 @@ import { verifyCardToken } from '../card/token';
 import { BookCopyModel } from '../copies/model';
 import { LoanModel, type Loan } from '../loans/model';
 import { MemberProfileModel } from '../members/model';
+import { applyDuePlanChanges } from '../members/planChange';
 import { MembershipPlanModel } from '../membershipPlans/model';
 import { ReservationModel } from '../reservations/model';
 import { holdCopyForNextReservation } from '../reservations/service';
@@ -72,6 +73,7 @@ async function memberSummary(
   now = new Date(),
 ): Promise<MemberScanDto> {
   // Always the latest data from the database; the QR only carries ids + signature.
+  await applyDuePlanChanges(now, memberId);
   const user = await UserModel.findOne({ _id: memberId, role: 'member' })
     .select('name email status')
     .lean();
@@ -198,6 +200,7 @@ export async function issue(
   );
   if (!claimed) throw new AppError(409, 'COPY_NOT_AVAILABLE', 'This copy was just issued');
 
+  await applyDuePlanChanges(new Date(), memberId);
   const profile = await MemberProfileModel.findOne({ userId: memberId }).select('planId').lean();
   const plan = await MembershipPlanModel.findById(profile!.planId).select('finePerDay').lean();
   const { loanDays } = await circulationSettings(libraryId);

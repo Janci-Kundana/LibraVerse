@@ -145,6 +145,33 @@ export interface MemberProfileDto {
   cardTier: CardTier;
   walletBalance: number;
   badges: string[];
+  /** a different plan bought during the current period; it starts when that period ends */
+  nextPlan: ScheduledPlanDto | null;
+  hasPhoto: boolean;
+  /** a new card photo waiting for staff, or the last one they turned down */
+  photoChange: PhotoChangeDto | null;
+}
+
+export interface ScheduledPlanDto {
+  planId: string;
+  planName: string;
+  startsAt: string;
+}
+
+export interface PhotoChangeDto {
+  status: 'pending' | 'rejected';
+  requestedAt: string;
+  note: string | null;
+}
+
+/** One row of the staff queue of card-photo changes. */
+export interface PhotoChangeItemDto {
+  profileId: string;
+  name: string;
+  email: string;
+  membershipNo: string | null;
+  requestedAt: string;
+  hasCurrentPhoto: boolean;
 }
 
 /** One row of the librarian's ID-verification queue. */
@@ -450,6 +477,8 @@ export interface CelebrationDto {
   amount: number;
   depositCollected: number;
   renewal: boolean;
+  /** set when the plan bought starts later, at the end of the current one */
+  startsAt: string | null;
 }
 
 /** Staff members list row. */
@@ -463,6 +492,7 @@ export interface MemberRowDto {
   membershipNo: string | null;
   planName: string | null;
   validTill: string | null;
+  nextPlan: ScheduledPlanDto | null;
   outstandingDues: number;
   depositBalance: number;
   cardStatus: CardStatus;

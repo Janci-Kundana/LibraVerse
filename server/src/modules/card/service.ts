@@ -6,12 +6,14 @@ import { notFound } from '../../core/ids';
 import { outstandingDues, standing } from '../dues/service';
 import { LibraryModel } from '../libraries/model';
 import { MemberProfileModel } from '../members/model';
+import { applyDuePlanChanges } from '../members/planChange';
 import { UserModel } from '../users/model';
 import { cardToken } from './token';
 
 /** The member's virtual card (FR-21). Tenant context of a verified member. */
 export async function getCard(libraryId: string, userId: string): Promise<MemberCardDto> {
   const memberId = new Types.ObjectId(userId);
+  await applyDuePlanChanges(new Date(), memberId);
   const [user, profile, library] = await Promise.all([
     UserModel.findById(memberId).select('name').lean(),
     MemberProfileModel.findOne({ userId: memberId }).lean(),

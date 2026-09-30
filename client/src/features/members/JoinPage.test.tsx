@@ -33,6 +33,15 @@ describe('JoinPage (FR-02)', () => {
     const submit = screen.getByRole('button', { name: 'Create account' });
     expect(submit).toBeDisabled();
     fireEvent.click(screen.getByRole('checkbox'));
+    // The card photo is required.
+    fireEvent.click(submit);
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'Add a clear photo of your face for your card',
+    );
+    const face = new File([new Uint8Array([0x89, 0x50, 0x4e, 0x47])], 'me.png', {
+      type: 'image/png',
+    });
+    fireEvent.change(screen.getByLabelText('Card photo'), { target: { files: [face] } });
     fireEvent.click(submit);
 
     expect(
@@ -44,6 +53,7 @@ describe('JoinPage (FR-02)', () => {
       name: 'Meera Nair',
       acceptTerms: true,
       idProof: expect.stringMatching(/^data:image\/png;base64,/),
+      photo: expect.stringMatching(/^data:image\/png;base64,/),
     });
   });
 });

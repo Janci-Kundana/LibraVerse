@@ -18,6 +18,7 @@ memberRoutes.get('/profile', c.myProfile);
 memberRoutes.post('/id-proof', validateBody(resubmitIdBody), c.resubmitId);
 memberRoutes.post('/photo', validateBody(photoBody), c.setPhoto);
 memberRoutes.get('/photo', c.myPhoto);
+memberRoutes.get('/photo/pending', c.myPendingPhoto);
 // Everything below needs an approved ID.
 memberRoutes.use(requireVerifiedMember);
 memberRoutes.get('/plans', plans.listActive);
@@ -34,6 +35,15 @@ staffMemberRoutes.get('/:profileId/photo', authenticate, requireRole('librarian'
 export const verificationRoutes = Router();
 verificationRoutes.use(authenticate, requireRole('librarian'));
 verificationRoutes.get('/', c.listVerifications);
+// New card photos from approved members wait here for staff approval.
+verificationRoutes.get('/photo-changes', c.listPhotoChanges);
+verificationRoutes.get('/photo-changes/:profileId/photo', c.requestedPhoto);
+verificationRoutes.post('/photo-changes/:profileId/approve', c.decidePhoto('approve'));
+verificationRoutes.post(
+  '/photo-changes/:profileId/reject',
+  validateBody(rejectBody),
+  c.decidePhoto('reject'),
+);
 verificationRoutes.get('/:profileId/id-proof', c.idProof);
 verificationRoutes.post('/:profileId/approve', c.decide('approve'));
 verificationRoutes.post('/:profileId/reject', validateBody(rejectBody), c.decide('reject'));

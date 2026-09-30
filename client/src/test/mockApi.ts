@@ -71,6 +71,9 @@ export function memberProfile(
     cardTier: 'member',
     walletBalance: 0,
     badges: [],
+    nextPlan: null,
+    hasPhoto: true,
+    photoChange: null,
   };
 }
 

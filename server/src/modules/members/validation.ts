@@ -14,8 +14,11 @@ export const joinBody = z.object({
     .regex(/^\+?[\d\s-]{7,20}$/, 'must be a phone number')
     .optional(),
   idProof,
-  /** optional profile picture (data URL), shown on the card */
-  photo: z.string().max(3_000_000).optional(),
+  /** card photo (data URL), required: staff compare it with the ID proof */
+  photo: z
+    .string({ error: 'Add a clear photo of your face for your card' })
+    .min(1, 'Add a clear photo of your face for your card')
+    .max(3_000_000, 'Photo must be under 2 MB'),
   acceptTerms: z.literal(true, { error: 'You must accept the library rules' }),
 });
 export type JoinInput = z.infer<typeof joinBody>;

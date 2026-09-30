@@ -145,6 +145,7 @@ describe('Pro registration and SaaS billing', () => {
         email,
         password: 'Reader-pass1',
         idProof: PNG_DATA_URL,
+        photo: PNG_DATA_URL,
         acceptTerms: true,
       });
     expect((await join('a@x.test')).status).toBe(201);

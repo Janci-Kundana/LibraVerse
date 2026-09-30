@@ -8,6 +8,7 @@ import { readFileAsDataUrl } from '../../lib/format';
 import { ME_KEY } from '../auth/useAuth';
 
 const MAX_ID_BYTES = 5 * 1024 * 1024;
+const MAX_PHOTO_BYTES = 2 * 1024 * 1024;
 
 /** FR-02: a visitor joins a library and uploads ID proof. */
 export function JoinPage() {
@@ -102,6 +103,8 @@ function JoinForm({
     e.preventDefault();
     if (!file) return setError('Upload a photo or PDF of your ID proof');
     if (file.size > MAX_ID_BYTES) return setError('ID proof must be under 5 MB');
+    if (!photo) return setError('Add a clear photo of your face for your card');
+    if (photo.size > MAX_PHOTO_BYTES) return setError('Photo must be under 2 MB');
     setError('');
     setBusy(true);
     try {
@@ -110,7 +113,7 @@ function JoinForm({
         ...form,
         phone: form.phone || undefined,
         idProof: await readFileAsDataUrl(file),
-        ...(photo ? { photo: await readFileAsDataUrl(photo) } : {}),
+        photo: await readFileAsDataUrl(photo),
         acceptTerms: accept,
       });
       if (res.status === 'ok') {
@@ -176,7 +179,7 @@ function JoinForm({
           </span>
         </label>
         <label className="block">
-          <span className="text-sm text-gray-300">Card photo (optional)</span>
+          <span className="text-sm text-gray-300">Card photo</span>
           <input
             type="file"
             accept="image/jpeg,image/png,image/webp"
@@ -185,7 +188,8 @@ function JoinForm({
             className="mt-1 block w-full text-sm text-gray-300 file:mr-3 file:rounded-lg file:border-0 file:bg-gray-800 file:px-3 file:py-2 file:text-gray-100"
           />
           <span className="mt-1 block text-xs text-gray-500">
-            A clear photo of your face for your membership card. You can add it later too.
+            A clear, recent photo of your face (JPG, PNG or WebP, up to 2 MB). Staff check it
+            against your ID; after approval, changing it needs their approval too.
           </span>
         </label>
         <label className="flex items-start gap-2 text-sm text-gray-300">

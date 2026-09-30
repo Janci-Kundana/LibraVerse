@@ -5,6 +5,8 @@ import type {
   MemberProfileDto,
   MemberRowDto,
   MemberStandingDto,
+  PhotoChangeItemDto,
+  ScheduledPlanDto,
   Role,
   VerificationItemDto,
   VerificationStatus,
@@ -24,6 +26,7 @@ import { PaymentModel } from '../payments/model';
 import { MembershipPlanModel } from '../membershipPlans/model';
 import { UserModel } from '../users/model';
 import { MemberProfileModel, type MemberProfile } from './model';
+import { applyDuePlanChanges } from './planChange';
 import type { JoinInput } from './validation';
 
 type Actor = { id: string; role: Role };
@@ -43,6 +46,8 @@ export async function joinLibrary(input: JoinInput) {
   const library = await LibraryModel.findOne({ slug: input.librarySlug, status: 'active' }).lean();
   if (!library) throw notFound('Library');
   const file = decodeIdProof(input.idProof);
+  // Checked before anything is created, so a bad photo leaves no half-made account.
+  const photoFile = decodeDataUrl(input.photo, { allowed: PHOTO_TYPES, maxBytes: 2 * 1024 * 1024 });
 
   return runWithTenant(library._id, async () => {
     const limits = await currentLimits();
@@ -82,17 +87,11 @@ export async function joinLibrary(input: JoinInput) {
         throw new AppError(409, 'EMAIL_TAKEN', 'This email already has an account here');
       throw err;
     }
-    const photo = input.photo
-      ? await putFile(
-          decodeDataUrl(input.photo, { allowed: PHOTO_TYPES, maxBytes: 2 * 1024 * 1024 }),
-          `photos/${String(library._id)}`,
-          'private',
-        )
-      : null;
+    const photo = await putFile(photoFile, `photos/${String(library._id)}`, 'private');
     await MemberProfileModel.create({
       userId: user._id,
       phone: input.phone ?? null,
-      photoKey: photo?.key ?? null,
+      photoKey: photo.key,
       idProofKey: stored.key,
       termsAcceptedAt: new Date(),
     });
@@ -101,6 +100,7 @@ export async function joinLibrary(input: JoinInput) {
 }
 
 async function profileFor(userId: string) {
+  await applyDuePlanChanges(new Date(), userId);
   const profile = await MemberProfileModel.findOne({ userId: new Types.ObjectId(userId) });
   if (!profile) throw notFound('Member profile');
   return profile;
@@ -111,6 +111,15 @@ export async function toProfileDto(
 ): Promise<MemberProfileDto> {
   const plan = p.planId ? await MembershipPlanModel.findById(p.planId).select('name').lean() : null;
   return {
+    nextPlan: await scheduledPlan(p.nextPlan),
+    hasPhoto: p.photoKey != null,
+    photoChange: p.photoChange
+      ? {
+          status: p.photoChange.status,
+          requestedAt: p.photoChange.requestedAt.toISOString(),
+          note: p.photoChange.note ?? null,
+        }
+      : null,
     id: String(p._id),
     verificationStatus: p.verificationStatus,
     verificationNote: p.verificationNote ?? null,
@@ -124,16 +133,128 @@ export async function toProfileDto(
   };
 }
 
+async function scheduledPlan(
+  next: { planId: Types.ObjectId; startsAt: Date } | null | undefined,
+): Promise<ScheduledPlanDto | null> {
+  if (!next) return null;
+  const plan = await MembershipPlanModel.findById(next.planId).select('name').lean();
+  return {
+    planId: String(next.planId),
+    planName: plan?.name ?? 'New plan',
+    startsAt: next.startsAt.toISOString(),
+  };
+}
+
 const PHOTO_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
 
-/** Profile picture: private, shown on the card and to this library's staff. */
+/**
+ * Profile picture: private, shown on the card and to this library's staff.
+ * Until the ID is approved the member may replace it (staff check it with the
+ * ID); after that a new photo waits for staff approval (decided with the user).
+ */
 export async function setPhoto(userId: string, dataUrl: string) {
   const profile = await profileFor(userId);
   const file = decodeDataUrl(dataUrl, { allowed: PHOTO_TYPES, maxBytes: 2 * 1024 * 1024 });
   const stored = await putFile(file, `photos/${String(profile.libraryId)}`, 'private');
-  profile.photoKey = stored.key;
+  if (profile.verificationStatus === 'approved') {
+    profile.photoChange = { key: stored.key, status: 'pending', requestedAt: new Date() };
+  } else {
+    profile.photoKey = stored.key;
+  }
   await profile.save();
   return toProfileDto(profile);
+}
+
+/** The member's own photo; `pending` gives the one waiting for approval. */
+export async function openMyPendingPhoto(userId: string) {
+  const profile = await profileFor(userId);
+  if (profile.photoChange?.status !== 'pending') throw notFound('Photo');
+  return openFile(profile.photoChange.key);
+}
+
+/** Staff queue: new card photos waiting for approval, oldest first. */
+export async function listPhotoChanges(): Promise<PhotoChangeItemDto[]> {
+  const profiles = await MemberProfileModel.find({ 'photoChange.status': 'pending' })
+    .sort({ 'photoChange.requestedAt': 1 })
+    .select('userId membershipNo photoKey photoChange')
+    .lean();
+  const users = await UserModel.find({ _id: { $in: profiles.map((p) => p.userId) } })
+    .select('name email')
+    .lean();
+  const byId = new Map(users.map((u) => [String(u._id), u]));
+  return profiles.map((p) => ({
+    profileId: String(p._id),
+    name: byId.get(String(p.userId))?.name ?? 'Member',
+    email: byId.get(String(p.userId))?.email ?? '',
+    membershipNo: p.membershipNo ?? null,
+    requestedAt: p.photoChange!.requestedAt.toISOString(),
+    hasCurrentPhoto: p.photoKey != null,
+  }));
+}
+
+export async function openRequestedPhoto(profileId: string) {
+  const profile = await MemberProfileModel.findById(parseId(profileId, 'Member'))
+    .select('photoChange')
+    .lean();
+  if (profile?.photoChange?.status !== 'pending') throw notFound('Photo');
+  return openFile(profile.photoChange.key);
+}
+
+/** Staff approve (the card switches to it) or reject (with a reason) a new photo. */
+export async function decidePhotoChange(
+  libraryId: string,
+  profileId: string,
+  decision: 'approve' | 'reject',
+  actor: Actor,
+  reason?: string,
+) {
+  const _id = parseId(profileId, 'Member');
+  const current = await MemberProfileModel.findOne({ _id, 'photoChange.status': 'pending' })
+    .select('userId photoChange')
+    .lean();
+  if (!current) {
+    throw new AppError(409, 'NO_PHOTO_CHANGE', 'There is no new photo waiting for this member');
+  }
+  const now = new Date();
+  // Claimed atomically: approving twice (or approve + reject) does nothing twice.
+  const claimed = await MemberProfileModel.findOneAndUpdate(
+    { _id, 'photoChange.status': 'pending', 'photoChange.key': current.photoChange!.key },
+    decision === 'approve'
+      ? { $set: { photoKey: current.photoChange!.key, photoChange: null } }
+      : {
+          $set: {
+            'photoChange.status': 'rejected',
+            'photoChange.note': reason ?? null,
+            'photoChange.decidedBy': new Types.ObjectId(actor.id),
+            'photoChange.decidedAt': now,
+          },
+        },
+  );
+  if (!claimed) {
+    throw new AppError(409, 'NO_PHOTO_CHANGE', 'There is no new photo waiting for this member');
+  }
+  await recordAudit({
+    libraryId,
+    actor,
+    action: decision === 'approve' ? 'member.photoApproved' : 'member.photoRejected',
+    target: { type: 'memberProfile', id: _id },
+    details: decision === 'reject' ? { reason } : {},
+  });
+  const user = await UserModel.findById(current.userId).select('name email').lean();
+  const library = await LibraryModel.findById(libraryId).select('name').lean();
+  if (user) {
+    await sendMail({
+      to: user.email,
+      subject:
+        decision === 'approve'
+          ? `Your new card photo is approved at ${library?.name}`
+          : `Your new card photo at ${library?.name} was not approved`,
+      text:
+        decision === 'approve'
+          ? `Hi ${user.name},\n\nYour new photo is now on your membership card.`
+          : `Hi ${user.name},\n\nYour new card photo was not approved, so your card keeps the current one.\n\nReason: ${reason ?? '-'}\n\nYou can upload another photo from Home.`,
+    });
+  }
 }
 
 export async function openMyPhoto(userId: string) {
@@ -197,6 +318,10 @@ export async function pendingCelebration(userId: string): Promise<CelebrationDto
     amount: payment.amount,
     depositCollected: payment.depositAmount ?? 0,
     renewal: earlier > 0,
+    startsAt:
+      profile.nextPlan && String(profile.nextPlan.planId) === String(payment.planId)
+        ? profile.nextPlan.startsAt.toISOString()
+        : null,
   };
 }
 
@@ -209,6 +334,7 @@ export async function celebrationSeen(userId: string, paymentId: string) {
 
 /** Staff: members with their standing (dues, deposit, card status). */
 export async function listMembers(q?: string) {
+  await applyDuePlanChanges();
   const userFilter: Record<string, unknown> = { role: 'member' };
   if (q) {
     const rx = { $regex: q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), $options: 'i' };
@@ -245,6 +371,7 @@ export async function listMembers(q?: string) {
       membershipNo: p.membershipNo ?? null,
       planName: p.planId ? (planName.get(String(p.planId)) ?? null) : null,
       validTill: p.validTill ? p.validTill.toISOString() : null,
+      nextPlan: await scheduledPlan(p.nextPlan),
       outstandingDues: due,
       depositBalance: p.depositBalance ?? 0,
       cardStatus: s.cardStatus,

@@ -22,7 +22,8 @@ const MEMBER: GuidePage[] = [
     steps: [
       'Buy or renew a plan under "Membership plans": enter a coupon if you have one, then tap "Buy for ₹…" and pay with Razorpay. The first plan also collects the security deposit.',
       'Your membership starts the moment the payment is confirmed; you will see a celebration and your new card.',
-      'Upload a card photo under "Card photo" so staff can recognise you when they scan your card.',
+      'Buying a different plan while one is running does not cut it short: the new plan starts when the current one ends ("Then … from …" shows the date). Buying the same plan adds its days.',
+      'To change your card photo, choose a new one under "Card photo" and tap "Send for approval". Staff check it; your card keeps the current photo until they approve.',
       '"Deposit and dues" shows your deposit, unpaid fines and whether your card is active or blocked.',
       'To leave the library, request a deposit refund under "Deposit refund" once every book is returned.',
     ],
@@ -143,10 +144,12 @@ const STAFF: GuidePage[] = [
   {
     path: '/library/verifications',
     title: 'ID verification',
-    summary: 'New members wait here until staff check their ID proof.',
+    summary:
+      'New members wait here until staff check their ID proof, and new card photos wait for approval.',
     steps: [
-      'Open the uploaded ID proof, then approve it, or reject it with a reason so the member can upload a new one.',
+      'Compare the card photo with the face on the ID proof ("View ID proof"), then approve, or reject with a reason so the member can upload a new one.',
       'Only approved members can buy a plan and get a card.',
+      'Under "New card photos", compare the new photo with the current one: "Approve photo" puts it on the card; "Reject" keeps the old photo and emails your reason.',
     ],
   },
   {
