@@ -71,6 +71,17 @@ export function signChallenge(userId: string): string {
 export const verifyChallenge = (token: string) =>
   verify<{ sub: string }>(token, env.JWT_ACCESS_SECRET, 'login-otp');
 
+export function signSocketToken(claims: AccessClaims): string {
+  return jwt.sign(claims, env.JWT_ACCESS_SECRET, {
+    algorithm: 'HS256',
+    audience: 'socket',
+    expiresIn: 5 * 60,
+  });
+}
+
+export const verifySocketToken = (token: string) =>
+  verify<AccessClaims>(token, env.JWT_ACCESS_SECRET, 'socket');
+
 export const newJti = () => randomBytes(24).toString('base64url');
 export const sha256 = (value: string) => createHash('sha256').update(value).digest('hex');
 

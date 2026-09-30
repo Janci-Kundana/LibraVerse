@@ -3,7 +3,7 @@ import { Server, type Socket } from 'socket.io';
 import { isStaff, type PaymentUpdatedEvent, type Role } from '@libraverse/shared';
 import { env } from '../config/env';
 import { runWithTenant } from '../core/tenant';
-import { ACCESS_COOKIE, verifyAccess } from '../modules/auth/tokens';
+import { ACCESS_COOKIE, verifyAccess, verifySocketToken } from '../modules/auth/tokens';
 import { PaymentModel } from '../modules/payments/model';
 
 // Rooms: user:<id> (auto), library:<id> (staff, auto), payment:<id> (on request,
@@ -30,9 +30,14 @@ export function attachRealtime(server: HttpServer): Server {
 
   io.use((socket, next) => {
     try {
-      const token = cookieValue(socket.handshake.headers.cookie, ACCESS_COOKIE);
-      if (!token) throw new Error('no token');
-      const claims = verifyAccess(token);
+      // Same-origin: the access cookie. Cross-origin (e.g. Vercel → Render):
+      // a 5-minute token from GET /api/auth/socket-token in handshake.auth.
+      const cookie = cookieValue(socket.handshake.headers.cookie, ACCESS_COOKIE);
+      const handshakeToken = (socket.handshake.auth as { token?: unknown } | undefined)?.token;
+      let claims;
+      if (cookie) claims = verifyAccess(cookie);
+      else if (typeof handshakeToken === 'string') claims = verifySocketToken(handshakeToken);
+      else throw new Error('no token');
       socket.data.auth = {
         userId: claims.sub,
         role: claims.role,

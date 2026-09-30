@@ -2,7 +2,7 @@ import type { RequestHandler } from 'express';
 import type { LoginResponse } from '@libraverse/shared';
 import { env } from '../../config/env';
 import * as auth from './service';
-import { REFRESH_COOKIE, clearAuthCookies, setAuthCookies } from './tokens';
+import { REFRESH_COOKIE, clearAuthCookies, setAuthCookies, signSocketToken } from './tokens';
 
 export const login: RequestHandler = async (req, res) => {
   const result = await auth.login(req.body);
@@ -70,6 +70,13 @@ export const googleLogin: RequestHandler = async (req, res) => {
   }
   setAuthCookies(res, result.tokens);
   res.json({ status: 'ok', user: result.user } satisfies LoginResponse);
+};
+
+/** Short-lived token for the Socket.io handshake when the socket is cross-origin. */
+export const socketToken: RequestHandler = (req, res) => {
+  const { userId, role, libraryId } = req.auth!;
+  res.set('Cache-Control', 'no-store');
+  res.json({ token: signSocketToken({ sub: userId, role, lib: libraryId }) });
 };
 
 export const config: RequestHandler = (_req, res) => {

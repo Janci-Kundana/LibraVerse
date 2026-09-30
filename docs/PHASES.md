@@ -48,6 +48,7 @@ Status: **approved 2026-09-29**. Each phase ends with green tests, run instructi
 - Google sign-in only signs in existing accounts with a Google-verified email (never creates one: members join with ID proof, staff are invited); it shares the library-choice and staff-2FA steps with password login. Off unless `GOOGLE_CLIENT_ID` is set.
 - Charts are hand-built SVG (single series, validated brand crimson on the dark surface, hover tooltips, table view) rather than a chart library.
 - Known: `npm audit` reports 2 moderate advisories in `uuid` via exceljs; they affect only callers passing a buffer, which this code never does.
+- Hardening: rate limits on sign-in/OTP/reset (20 per 15 min per IP), public forms (10 per hour per IP) and the AI assistant (30 per hour per member); `trust proxy` in production; malformed JSON is a 400. Production runs the API on Render and the site on Vercel, which rewrites `/api` to Render so cookies stay first-party; Socket.io connects straight to Render with a 5-minute handshake token from `GET /api/auth/socket-token`.
 - Mongoose is pinned to **v8** (MongoDB driver 6). With Mongoose 9 / driver 7, the connection handshake fails inside Jest's VM sandbox ("Missing required sub-document 'driver' in the client metadata document"), although it works in plain Node. Revisit when upgrading.
 
 ## Progress
@@ -61,3 +62,4 @@ Status: **approved 2026-09-29**. Each phase ends with green tests, run instructi
 - [x] Phase 6: 3D card and PWA (2026-09-30)
 - [x] Phase 7: SaaS billing, donations, notifications, events (2026-09-30)
 - [x] Phase 8: Reports, analytics, AI, Google login (2026-09-30)
+- [x] Phase 9: Hardening and deploy (2026-09-30). Remaining manual items: README screenshots, TC-12 on a real phone, live Razorpay/SMTP/Cloudinary/Google/Anthropic credentials, and the actual Render + Vercel deployment.

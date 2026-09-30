@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import { publicFormLimiter } from '../../core/rateLimit';
 import { validateBody } from '../../core/validate';
 import { verifyAccess, ACCESS_COOKIE } from '../auth/tokens';
 import { actorOf, authenticate, libraryOf, requireRole } from '../auth/middleware';
@@ -9,6 +10,7 @@ import * as donations from './service';
 export const publicDonationRoutes = Router();
 publicDonationRoutes.post(
   '/:slug/donations',
+  publicFormLimiter,
   validateBody(donations.offerBody),
   async (req, res) => {
     let memberId: string | null = null;

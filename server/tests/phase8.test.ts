@@ -17,14 +17,12 @@ async function libraryWithActivity() {
   await createUser({ libraryId: lib.id, role: 'libraryAdmin', email: 'owner@city.test' });
   const admin = await signedInAgent(app, 'owner@city.test');
   const book = (
-    await admin
-      .post('/api/books')
-      .send({
-        title: 'Wings of Fire',
-        authors: ['A. P. J. Abdul Kalam'],
-        category: 'Biography',
-        copies: { count: 2, branchId: String(lib.branch._id) },
-      })
+    await admin.post('/api/books').send({
+      title: 'Wings of Fire',
+      authors: ['A. P. J. Abdul Kalam'],
+      category: 'Biography',
+      copies: { count: 2, branchId: String(lib.branch._id) },
+    })
   ).body;
   const m = await activeMember(app, lib.id, 'reader@city.test');
   await admin

@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import { publicFormLimiter } from '../../core/rateLimit';
 import { validateBody } from '../../core/validate';
 import { authenticate, requireRole } from '../auth/middleware';
 import * as plans from '../membershipPlans/controller';
@@ -8,7 +9,7 @@ import { joinBody, rejectBody, resubmitIdBody } from './validation';
 
 /** Public sign-up (FR-02). */
 export const joinRoutes = Router();
-joinRoutes.post('/join', validateBody(joinBody), c.join);
+joinRoutes.post('/join', publicFormLimiter, validateBody(joinBody), c.join);
 
 /** The signed-in member's own area. */
 export const memberRoutes = Router();

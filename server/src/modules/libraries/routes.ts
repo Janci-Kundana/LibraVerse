@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import { publicFormLimiter } from '../../core/rateLimit';
 import { validateBody } from '../../core/validate';
 import { authenticate, requireRole } from '../auth/middleware';
 import * as c from './controller';
@@ -6,7 +7,7 @@ import { LIBRARY_ACTIONS, libraryActionBody, registerLibraryBody } from './valid
 
 /** Public: library self-registration (FR-01). */
 export const libraryRoutes = Router();
-libraryRoutes.post('/register', validateBody(registerLibraryBody), c.register);
+libraryRoutes.post('/register', publicFormLimiter, validateBody(registerLibraryBody), c.register);
 
 /** Super Admin: approve, reject, suspend, reactivate (FR-05). */
 export const adminLibraryRoutes = Router();

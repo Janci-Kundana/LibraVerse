@@ -46,6 +46,9 @@ export function createApp() {
   registerInAppChannel();
 
   app.disable('x-powered-by');
+  // Behind Render's proxy: trust one hop so client IPs (rate limits) and
+  // secure cookies are correct.
+  if (env.NODE_ENV === 'production') app.set('trust proxy', 1);
   app.use(helmet());
   app.use(cors({ origin: env.CLIENT_URL, credentials: true }));
   app.use(cookieParser());
