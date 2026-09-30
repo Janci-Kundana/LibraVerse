@@ -1,7 +1,15 @@
 import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { PlatformPlanCode, PlatformPlanDto } from '@libraverse/shared';
-import { Button, Card, ErrorText, Field, PageHeader, StatusPill } from '../../components/ui';
+import {
+  PageSkeleton,
+  Button,
+  Card,
+  ErrorText,
+  Field,
+  PageHeader,
+  StatusPill,
+} from '../../components/ui';
 import { api, errorMessage, post, put } from '../../lib/api';
 import { formatDate, rupees, toPaise } from '../../lib/format';
 import { openCheckout } from '../../lib/razorpay';
@@ -75,7 +83,7 @@ export function SubscriptionPage() {
     mutationFn: () => post<SubscriptionView>('/api/library/subscription/downgrade'),
     onSuccess: (d) => qc.setQueryData(key, d),
   });
-  if (!sub.data) return <p className="text-gray-400">Loading…</p>;
+  if (!sub.data) return <PageSkeleton />;
   const s = sub.data;
   const pro = s.plans.find((p) => p.code === 'pro');
 

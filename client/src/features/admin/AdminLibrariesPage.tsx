@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { LIBRARY_STATUSES, type AdminLibraryDto, type LibraryStatus } from '@libraverse/shared';
-import { Button, ErrorText } from '../../components/ui';
+import { PageSkeleton, Button, ErrorText } from '../../components/ui';
 import { api, errorMessage, post } from '../../lib/api';
 
 type Action = 'approve' | 'reject' | 'suspend' | 'reactivate';
@@ -82,7 +82,7 @@ export function AdminLibrariesPage() {
       </div>
 
       {libraries.isPending ? (
-        <p className="mt-6 text-gray-400">Loading…</p>
+        <PageSkeleton />
       ) : libraries.data?.length === 0 ? (
         <p className="mt-6 text-gray-400">No {status} libraries.</p>
       ) : (

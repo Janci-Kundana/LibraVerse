@@ -9,7 +9,14 @@ import type {
   ReservationDto,
 } from '@libraverse/shared';
 import { BookCover, Stars } from '../../components/BookCover';
-import { Button, Card, ErrorText, PageHeader, SelectField } from '../../components/ui';
+import {
+  PageSkeleton,
+  Button,
+  Card,
+  ErrorText,
+  PageHeader,
+  SelectField,
+} from '../../components/ui';
 import { api, errorMessage, post, put } from '../../lib/api';
 import { formatDate } from '../../lib/format';
 
@@ -213,7 +220,7 @@ export function MemberBookPage() {
   });
 
   if (book.isError) return <ErrorText>{errorMessage(book.error)}</ErrorText>;
-  if (!book.data) return <p className="text-gray-400">Loading…</p>;
+  if (!book.data) return <PageSkeleton />;
   const b = book.data;
 
   return (

@@ -11,6 +11,7 @@ import type {
 } from '@libraverse/shared';
 import { BookCover } from '../../components/BookCover';
 import {
+  PageSkeleton,
   Button,
   Card,
   ErrorText,
@@ -118,7 +119,7 @@ export function NewBookPage() {
       navigate(`/library/catalog/${book.id}`);
     },
   });
-  if (!branches.data) return <p className="text-gray-400">Loading…</p>;
+  if (!branches.data) return <PageSkeleton />;
   return (
     <div className="max-w-4xl">
       <PageHeader title="Add a book" />
@@ -186,7 +187,7 @@ export function StaffBookPage() {
   });
 
   if (book.isError) return <ErrorText>{errorMessage(book.error)}</ErrorText>;
-  if (!book.data) return <p className="text-gray-400">Loading…</p>;
+  if (!book.data) return <PageSkeleton />;
   const b = book.data;
 
   return (

@@ -1,4 +1,5 @@
 import { useId, useState } from 'react';
+import { Icon, type IconName } from './icons';
 
 export interface BarDatum {
   label: string;
@@ -31,6 +32,7 @@ export function BarChart({
 }) {
   const [hover, setHover] = useState<number | null>(null);
   const id = useId();
+  const gradId = `bar${id.replace(/[^a-zA-Z0-9]/g, '')}`;
   const W = 600;
   const pad = { top: 12, right: 8, bottom: 22, left: 48 };
   const plotW = W - pad.left - pad.right;
@@ -45,15 +47,18 @@ export function BarChart({
   const ticks = [0, niceMax / 2, niceMax];
 
   return (
-    <figure
-      className="rounded-xl border border-gray-800 bg-gray-900 p-4"
-      aria-labelledby={`${id}-t`}
-    >
+    <figure className="glass rounded-2xl p-4 sm:p-5" aria-labelledby={`${id}-t`}>
       <figcaption id={`${id}-t`} className="mb-2 text-sm font-medium text-gray-200">
         {title}
       </figcaption>
       <div className="relative">
         <svg viewBox={`0 0 ${W} ${height}`} className="h-auto w-full" role="img" aria-label={title}>
+          <defs>
+            <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor="#f0506b" />
+              <stop offset="100%" stopColor="#c0263a" />
+            </linearGradient>
+          </defs>
           {ticks.map((t) => (
             <g key={t}>
               <line
@@ -61,7 +66,7 @@ export function BarChart({
                 x2={W - pad.right}
                 y1={y(t)}
                 y2={y(t)}
-                stroke="#1f2937"
+                stroke="rgb(255 255 255 / 0.06)"
                 strokeWidth={1}
               />
               <text x={pad.left - 6} y={y(t) + 4} textAnchor="end" fontSize={10} fill="#9ca3af">
@@ -93,7 +98,7 @@ export function BarChart({
                 {h > 0 && (
                   <path
                     d={`M${x},${pad.top + plotH} v${-(h - r)} q0,${-r} ${r},${-r} h${barW - 2 * r} q${r},0 ${r},${r} v${h - r} z`}
-                    fill="#c0263a"
+                    fill={`url(#${gradId})`}
                     opacity={hover === null || hover === i ? 1 : 0.55}
                   />
                 )}
@@ -115,7 +120,7 @@ export function BarChart({
         {hover !== null && data[hover] && (
           <div
             role="tooltip"
-            className="pointer-events-none absolute -translate-x-1/2 rounded-md border border-gray-700 bg-gray-950 px-2 py-1 text-xs text-gray-100 shadow"
+            className="pointer-events-none absolute -translate-x-1/2 rounded-lg border border-white/10 bg-[#0b0f1e]/95 px-2.5 py-1.5 backdrop-blur text-xs text-gray-100 shadow"
             style={{ left: `${((pad.left + hover * step + step / 2) / W) * 100}%`, top: 0 }}
           >
             <span className="text-gray-400">{data[hover].label}: </span>
@@ -146,12 +151,36 @@ function niceCeil(v: number) {
   return (f <= 1 ? 1 : f <= 2 ? 2 : f <= 5 ? 5 : 10) * exp;
 }
 
-export function StatTile({ label, value, tone }: { label: string; value: string; tone?: 'warn' }) {
+export function StatTile({
+  label,
+  value,
+  tone,
+  icon,
+}: {
+  label: string;
+  value: string;
+  tone?: 'warn';
+  icon?: IconName;
+}) {
+  const warn = tone === 'warn';
   return (
-    <div className="rounded-xl border border-gray-800 bg-gray-900 p-4">
-      <p className="text-xs uppercase tracking-wide text-gray-500">{label}</p>
+    <div className="glass group relative overflow-hidden rounded-2xl p-4 transition duration-300 hover:-translate-y-0.5 hover:border-white/15">
+      <div
+        aria-hidden
+        className={`absolute -top-10 -right-10 h-28 w-28 rounded-full blur-2xl transition group-hover:opacity-100 ${warn ? 'bg-amber-400/25' : 'bg-brand-500/20 opacity-70'}`}
+      />
+      <div className="relative flex items-start justify-between gap-2">
+        <p className="text-xs font-medium uppercase tracking-wider text-gray-400">{label}</p>
+        {icon && (
+          <span
+            className={`grid h-8 w-8 place-items-center rounded-xl border border-white/8 bg-white/[0.04] ${warn ? 'text-amber-300' : 'text-brand-300'}`}
+          >
+            <Icon name={icon} className="h-4 w-4" />
+          </span>
+        )}
+      </div>
       <p
-        className={`mt-1 text-2xl font-semibold ${tone === 'warn' ? 'text-yellow-300' : 'text-gray-100'}`}
+        className={`relative mt-2 font-[family-name:var(--font-display)] text-2xl font-bold ${warn ? 'text-amber-200' : 'text-white'}`}
       >
         {value}
       </p>

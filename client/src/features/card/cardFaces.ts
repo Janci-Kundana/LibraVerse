@@ -195,6 +195,7 @@ export function drawFront(ctx: CanvasRenderingContext2D, card: MemberCardDto, im
   ctx.roundRect(qx, qy, 240, 240, 18);
   ctx.fill();
   if (img.qr) ctx.drawImage(img.qr, qx + 14, qy + 14, 212, 212);
+  else drawPlaceholderQr(ctx, qx + 20, qy + 20, 200);
   ctx.fillStyle = f.muted;
   ctx.font = '500 18px Inter, system-ui, sans-serif';
   ctx.textAlign = 'center';
@@ -316,4 +317,34 @@ export async function renderFaces(card: MemberCardDto, photoSrc: string | null =
   if (fctx) drawFront(fctx, card, images);
   if (bctx) drawBack(bctx, card, images);
   return { front, back };
+}
+
+/** A decorative QR-like pattern for demo cards that have no real token. */
+function drawPlaceholderQr(ctx: CanvasRenderingContext2D, x: number, y: number, size: number) {
+  const n = 25;
+  const cell = size / n;
+  ctx.fillStyle = '#0b0f1e';
+  let seed = 7;
+  const rand = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+  const finder = (cx: number, cy: number) => (cx >= 0 && cx < 7 && cy >= 0 && cy < 7 ? 1 : 0);
+  for (let r = 0; r < n; r++) {
+    for (let c = 0; c < n; c++) {
+      const inFinder = finder(c, r) || finder(c - (n - 7), r) || finder(c, r - (n - 7));
+      if (inFinder) continue;
+      if (r < 8 && (c < 8 || c > n - 9)) continue;
+      if (r > n - 9 && c < 8) continue;
+      if (rand() > 0.52) ctx.fillRect(x + c * cell, y + r * cell, cell, cell);
+    }
+  }
+  for (const [fx, fy] of [
+    [0, 0],
+    [n - 7, 0],
+    [0, n - 7],
+  ] as const) {
+    ctx.fillRect(x + fx * cell, y + fy * cell, 7 * cell, 7 * cell);
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(x + (fx + 1) * cell, y + (fy + 1) * cell, 5 * cell, 5 * cell);
+    ctx.fillStyle = '#0b0f1e';
+    ctx.fillRect(x + (fx + 2) * cell, y + (fy + 2) * cell, 3 * cell, 3 * cell);
+  }
 }

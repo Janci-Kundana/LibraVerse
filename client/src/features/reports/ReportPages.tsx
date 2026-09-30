@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Link } from 'react-router';
 import { useQuery } from '@tanstack/react-query';
 import { BarChart, StatTile } from '../../components/BarChart';
-import { Button, Card, Field, PageHeader, StatusPill } from '../../components/ui';
+import { PageSkeleton, Button, Card, Field, PageHeader, StatusPill } from '../../components/ui';
 import { api } from '../../lib/api';
 import { formatDate, rupees } from '../../lib/format';
 import { useMe } from '../auth/useAuth';
@@ -80,7 +80,7 @@ function AdminDashboard() {
   if (!d.data)
     return (
       <HomeShell title="Library dashboard">
-        <p className="mt-4 text-gray-400">Loading…</p>
+        <PageSkeleton />
       </HomeShell>
     );
   const t = d.data.totals;
@@ -89,22 +89,25 @@ function AdminDashboard() {
   return (
     <HomeShell title="Library dashboard">
       <div className="mt-6 grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <StatTile label="Members" value={String(t.members)} />
+        <StatTile label="Members" icon="users" value={String(t.members)} />
         <StatTile
           label="Awaiting ID check"
+          icon="shieldCheck"
           value={String(t.pendingVerifications)}
           tone={t.pendingVerifications ? 'warn' : undefined}
         />
-        <StatTile label="On loan" value={String(t.activeLoans)} />
+        <StatTile label="On loan" icon="repeat" value={String(t.activeLoans)} />
         <StatTile
           label="Overdue"
+          icon="alert"
           value={String(t.overdueLoans)}
           tone={t.overdueLoans ? 'warn' : undefined}
         />
-        <StatTile label="Titles / copies" value={`${t.titles} / ${t.copies}`} />
-        <StatTile label="Revenue this month" value={rupees(t.revenueThisMonth)} />
+        <StatTile label="Titles / copies" icon="library" value={`${t.titles} / ${t.copies}`} />
+        <StatTile label="Revenue this month" icon="wallet" value={rupees(t.revenueThisMonth)} />
         <StatTile
           label="Unpaid fines"
+          icon="tag"
           value={rupees(t.outstandingDues)}
           tone={t.outstandingDues ? 'warn' : undefined}
         />
@@ -299,20 +302,25 @@ export function PlatformAnalyticsPage() {
     queryKey: ['admin', 'dashboard'],
     queryFn: () => api<PlatformDashboard>('/api/admin/reports/dashboard'),
   });
-  if (!d.data) return <p className="text-gray-400">Loading…</p>;
+  if (!d.data) return <PageSkeleton />;
   const s = d.data.librariesByStatus;
   return (
     <div className="max-w-5xl">
       <PageHeader title="Platform analytics" />
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <StatTile label="Active libraries" value={String(s.active ?? 0)} />
+        <StatTile label="Active libraries" icon="library" value={String(s.active ?? 0)} />
         <StatTile
           label="Awaiting approval"
+          icon="bell"
           value={String(s.pending ?? 0)}
           tone={s.pending ? 'warn' : undefined}
         />
-        <StatTile label="Suspended" value={String(s.suspended ?? 0)} />
-        <StatTile label="Members (all libraries)" value={String(d.data.totalMembers)} />
+        <StatTile label="Suspended" icon="lock" value={String(s.suspended ?? 0)} />
+        <StatTile
+          label="Members (all libraries)"
+          icon="users"
+          value={String(d.data.totalMembers)}
+        />
       </div>
       <div className="mt-6 grid gap-4 lg:grid-cols-2">
         <BarChart

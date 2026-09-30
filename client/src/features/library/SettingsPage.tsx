@@ -1,7 +1,7 @@
 import { useState, type FormEvent } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { LibrarySettingsDto } from '@libraverse/shared';
-import { Button, Card, ErrorText, Field, PageHeader } from '../../components/ui';
+import { PageSkeleton, Button, Card, ErrorText, Field, PageHeader } from '../../components/ui';
 import { api, errorMessage, put } from '../../lib/api';
 import { readFileAsDataUrl, toPaise } from '../../lib/format';
 import { ME_KEY } from '../auth/useAuth';
@@ -14,7 +14,7 @@ export function SettingsPage() {
     queryKey: SETTINGS_KEY,
     queryFn: () => api<LibrarySettingsDto>('/api/library/settings'),
   });
-  if (!settings.data) return <p className="text-gray-400">Loading…</p>;
+  if (!settings.data) return <PageSkeleton />;
   return <SettingsForm settings={settings.data} />;
 }
 

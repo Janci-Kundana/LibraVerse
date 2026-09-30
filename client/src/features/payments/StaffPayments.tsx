@@ -10,6 +10,7 @@ import type {
   PublicPayDto,
 } from '@libraverse/shared';
 import {
+  PageSkeleton,
   AuthCard,
   Button,
   Card,
@@ -311,7 +312,7 @@ export function PaymentSettingsPage() {
     },
   });
   const s = settings.data;
-  if (!s) return <p className="text-gray-400">Loading…</p>;
+  if (!s) return <PageSkeleton />;
   return (
     <div className="max-w-2xl">
       <PageHeader title="Online payments" />

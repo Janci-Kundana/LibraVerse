@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { MemberLoansDto } from '@libraverse/shared';
-import { Button, Card, ErrorText, PageHeader } from '../../components/ui';
+import { PageSkeleton, Button, Card, ErrorText, PageHeader } from '../../components/ui';
 import { api, errorMessage, post } from '../../lib/api';
 import { formatDate, rupees } from '../../lib/format';
 import { PayButton } from '../payments/MemberPayments';
@@ -22,7 +22,7 @@ export function MyLoansPage() {
     mutationFn: (id: string) => api<void>(`/api/member/reservations/${id}`, { method: 'DELETE' }),
     onSuccess: () => qc.invalidateQueries({ queryKey: MEMBER_LOANS_KEY }),
   });
-  if (!data.data) return <p className="text-gray-400">Loading…</p>;
+  if (!data.data) return <PageSkeleton />;
   const d = data.data;
 
   return (

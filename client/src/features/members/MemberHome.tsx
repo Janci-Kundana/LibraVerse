@@ -1,7 +1,11 @@
 import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { MemberProfileDto, MembershipPlanDto } from '@libraverse/shared';
-import { Button, Card, ErrorText } from '../../components/ui';
+import { Link } from 'react-router';
+import type { MemberCardDto } from '@libraverse/shared';
+import { Icon, type IconName } from '../../components/icons';
+import { Button, Card, ErrorText, PageSkeleton } from '../../components/ui';
+import { useCardFaces } from '../card/useCardFaces';
 import { api, errorMessage, post } from '../../lib/api';
 import { formatDate, readFileAsDataUrl, rupees } from '../../lib/format';
 import { HomeShell } from '../dashboard/DashboardLayout';
@@ -18,37 +22,133 @@ export function useMemberProfile() {
   });
 }
 
+const TIER_STYLE: Record<string, { ring: string; chip: string; glow: string }> = {
+  member: {
+    ring: 'from-gray-300/60 to-gray-500/30',
+    chip: 'bg-gray-200/15 text-gray-200',
+    glow: 'rgb(200 205 220 / 0.25)',
+  },
+  gold: {
+    ring: 'from-gold-300 to-gold-500',
+    chip: 'bg-gold-400/15 text-gold-200',
+    glow: 'rgb(226 187 102 / 0.35)',
+  },
+  premium: {
+    ring: 'from-brand-400 to-brand-700',
+    chip: 'bg-brand-500/15 text-brand-200',
+    glow: 'rgb(226 41 74 / 0.35)',
+  },
+  elite: {
+    ring: 'from-gray-500 to-gray-950',
+    chip: 'bg-white/10 text-gray-100',
+    glow: 'rgb(255 255 255 / 0.12)',
+  },
+};
+
+const QUICK: { to: string; label: string; hint: string; icon: IconName }[] = [
+  { to: '/member/card', label: 'My card', hint: 'Show it at the counter', icon: 'card' },
+  { to: '/member/catalog', label: 'Find a book', hint: 'Search and reserve', icon: 'search' },
+  { to: '/member/loans', label: 'My books', hint: 'Due dates and renewals', icon: 'book' },
+  {
+    to: '/member/assistant',
+    label: 'Ask the library',
+    hint: 'AI answers in seconds',
+    icon: 'sparkles',
+  },
+];
+
+/** The member's own card, drawn from their real data, floating in the hero. */
+function HeroCard() {
+  const card = useQuery({
+    queryKey: ['member', 'card'],
+    queryFn: () => api<MemberCardDto>('/api/member/card'),
+    retry: false,
+  });
+  const faces = useCardFaces(card.data);
+  if (!faces) return <div className="skeleton aspect-[1.586] w-full max-w-sm" />;
+  return (
+    <Link to="/member/card" aria-label="Open my card" className="block">
+      <img
+        src={faces.front.toDataURL()}
+        alt="Your membership card"
+        className="w-full max-w-sm animate-float rounded-2xl shadow-[0_30px_80px_-24px_rgb(0_0_0/0.9)] transition duration-500 [transform:perspective(900px)_rotateY(-12deg)_rotateX(6deg)] hover:[transform:perspective(900px)_rotateY(0deg)_rotateX(0deg)]"
+      />
+    </Link>
+  );
+}
+
 export function MemberHome() {
   const profile = useMemberProfile();
-  if (profile.isPending) return <p className="text-gray-400">Loading…</p>;
+  if (profile.isPending) return <PageSkeleton />;
   if (profile.isError) return <ErrorText>{errorMessage(profile.error)}</ErrorText>;
   const p = profile.data;
   if (p.verificationStatus !== 'approved') return <VerificationPending profile={p} />;
+  const tier = TIER_STYLE[p.cardTier] ?? TIER_STYLE.member!;
 
   return (
     <HomeShell title="Home">
-      <Card className="mt-6 max-w-xl">
-        <p className="text-sm text-gray-400">Membership number</p>
-        {p.badges.includes('contributor') && (
-          <p className="mb-2 inline-block rounded-full bg-yellow-950 px-2 py-0.5 text-xs text-yellow-300">
-            ★ Contributor
-          </p>
-        )}
-        <p className="font-mono text-lg tracking-widest">
-          {p.membershipNo?.replace(/(\d{4})(?=\d)/g, '$1 ')}
-        </p>
-        <p className="mt-3 text-sm text-gray-400">
-          {p.planName
-            ? `${p.planName} · valid till ${formatDate(p.validTill)}`
-            : 'No active membership plan yet.'}
-        </p>
-      </Card>
+      <section className="glass relative mt-6 overflow-hidden rounded-3xl p-6 sm:p-8">
+        <div
+          aria-hidden
+          className="absolute -right-20 -top-24 h-72 w-72 rounded-full blur-3xl"
+          style={{ background: tier.glow }}
+        />
+        <div className="relative grid items-center gap-8 lg:grid-cols-[1fr_auto]">
+          <div>
+            <div className="flex flex-wrap items-center gap-2">
+              <span
+                className={`rounded-full px-3 py-1 text-xs font-semibold capitalize ${tier.chip}`}
+              >
+                {p.cardTier} tier
+              </span>
+              {p.badges.includes('contributor') && (
+                <span className="rounded-full bg-gold-400/15 px-3 py-1 text-xs font-semibold text-gold-200">
+                  ★ Contributor
+                </span>
+              )}
+            </div>
+            <p className="mt-4 text-sm text-gray-400">Membership number</p>
+            <p className="mt-1 font-mono text-xl tracking-[0.18em] sm:text-2xl">
+              {p.membershipNo?.replace(/(\d{4})(?=\d)/g, '$1 ')}
+            </p>
+            <p className="mt-3 text-gray-300">
+              {p.planName ? (
+                <>
+                  <span className="font-semibold text-white">{p.planName}</span> · valid till{' '}
+                  {formatDate(p.validTill)}
+                </>
+              ) : (
+                'No active membership plan yet. Pick one below to start borrowing.'
+              )}
+            </p>
+            <div className="mt-6 grid grid-cols-2 gap-2.5 sm:grid-cols-4">
+              {QUICK.map((q) => (
+                <Link
+                  key={q.to}
+                  to={q.to}
+                  className="group rounded-2xl border border-white/8 bg-white/[0.03] p-3 transition hover:-translate-y-0.5 hover:border-brand-400/40 hover:bg-white/[0.06]"
+                >
+                  <Icon
+                    name={q.icon}
+                    className="h-5 w-5 text-brand-300 transition group-hover:scale-110"
+                  />
+                  <p className="mt-2 text-sm font-semibold">{q.label}</p>
+                  <p className="text-xs text-gray-500">{q.hint}</p>
+                </Link>
+              ))}
+            </div>
+          </div>
+          <div className="mx-auto w-full max-w-sm">
+            <HeroCard />
+          </div>
+        </div>
+      </section>
       <PhotoUploader profile={p} />
       <StandingPanel />
       <PlanList renewing={Boolean(p.planName)} />
-      <section className="mt-8">
+      <section className="mt-10">
         <h2 className="text-lg font-semibold">Notifications</h2>
-        <p className="mb-2 text-sm text-gray-400">Due dates, reserved books ready, payments.</p>
+        <p className="mb-3 text-sm text-gray-400">Due dates, reserved books ready, payments.</p>
         <NotificationsToggle />
       </section>
     </HomeShell>
@@ -61,28 +161,50 @@ function PlanList({ renewing }: { renewing: boolean }) {
     queryFn: () => api<MembershipPlanDto[]>('/api/member/plans'),
   });
   return (
-    <section className="mt-8">
+    <section className="mt-10">
       <h2 className="text-lg font-semibold">
         {renewing ? 'Renew or change plan' : 'Membership plans'}
       </h2>
-      <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-        {plans.data?.map((plan) => (
-          <Card key={plan.id}>
-            <p className="font-medium">{plan.name}</p>
-            <p className="text-2xl font-semibold">{rupees(plan.price)}</p>
-            <p className="text-sm text-gray-400">
-              {plan.durationDays} days · {plan.bookLimit} books at a time ·{' '}
-              {rupees(plan.finePerDay)}/day late
-            </p>
-            <div className="mt-3">
-              <PayButton
-                charge={{ purpose: 'membership', planId: plan.id }}
-                label={`Buy for ${rupees(plan.price)}`}
-                withCoupon
-              />
+      <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        {plans.data?.map((plan) => {
+          const t = TIER_STYLE[plan.tier] ?? TIER_STYLE.member!;
+          return (
+            <div key={plan.id} className={`rounded-2xl bg-gradient-to-br p-px ${t.ring}`}>
+              <div className="flex h-full flex-col rounded-[15px] bg-[#0b0f1e]/95 p-5">
+                <div className="flex items-center justify-between">
+                  <p className="font-semibold">{plan.name}</p>
+                  <span
+                    className={`rounded-full px-2.5 py-0.5 text-xs font-semibold capitalize ${t.chip}`}
+                  >
+                    {plan.tier}
+                  </span>
+                </div>
+                <p className="mt-3 font-[family-name:var(--font-display)] text-3xl font-bold">
+                  {rupees(plan.price)}
+                </p>
+                <ul className="mt-4 space-y-2 text-sm text-gray-300">
+                  {[
+                    `${plan.durationDays} days`,
+                    `${plan.bookLimit} books at a time`,
+                    `${rupees(plan.finePerDay)}/day late`,
+                  ].map((f) => (
+                    <li key={f} className="flex items-center gap-2">
+                      <Icon name="check" className="h-4 w-4 text-emerald-400" />
+                      {f}
+                    </li>
+                  ))}
+                </ul>
+                <div className="mt-5 pt-1">
+                  <PayButton
+                    charge={{ purpose: 'membership', planId: plan.id }}
+                    label={`Buy for ${rupees(plan.price)}`}
+                    withCoupon
+                  />
+                </div>
+              </div>
             </div>
-          </Card>
-        ))}
+          );
+        })}
       </div>
     </section>
   );
