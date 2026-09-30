@@ -36,6 +36,20 @@ function webglAvailable() {
   }
 }
 
+/** True on desktop-width screens (Tailwind's lg breakpoint), updated on resize. */
+function useDesktop() {
+  const query = '(min-width: 1024px)';
+  const [desktop, setDesktop] = useState(() => window.matchMedia?.(query).matches ?? false);
+  useEffect(() => {
+    const mq = window.matchMedia?.(query);
+    if (!mq) return;
+    const onChange = () => setDesktop(mq.matches);
+    mq.addEventListener('change', onChange);
+    return () => mq.removeEventListener('change', onChange);
+  }, []);
+  return desktop;
+}
+
 /** The real 3D card where WebGL exists; a CSS card everywhere else. */
 function HeroCard() {
   const [faces, setFaces] = useState<{ front: HTMLCanvasElement; back: HTMLCanvasElement } | null>(
@@ -162,6 +176,7 @@ function Reveal({
 }
 
 export function LandingPage() {
+  const desktop = useDesktop();
   return (
     <div className="relative min-h-dvh overflow-x-hidden text-gray-100">
       <Aurora />
@@ -193,7 +208,7 @@ export function LandingPage() {
       </header>
 
       {/* Hero */}
-      <section className="mx-auto grid max-w-7xl items-center gap-10 px-5 pt-8 pb-20 sm:px-8 lg:grid-cols-2 lg:pt-16">
+      <section className="mx-auto grid max-w-7xl items-center gap-10 px-5 pt-8 pb-20 sm:px-8 lg:pt-16">
         <div>
           <motion.span
             initial={{ opacity: 0, y: 10 }}
@@ -254,19 +269,22 @@ export function LandingPage() {
             ))}
           </div>
         </div>
-        <motion.div
-          initial={{ opacity: 0, scale: 0.9 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ delay: 0.2, duration: 0.7 }}
-          className="relative"
-        >
-          <div
-            aria-hidden
-            className="absolute inset-10 -z-10 rounded-full bg-[radial-gradient(closest-side,rgb(226_187_102/0.35),transparent)] blur-2xl"
-          />
-          <HeroCard />
-          <p className="mt-2 text-center text-xs text-gray-500">Drag the card to spin it</p>
-        </motion.div>
+        {/* The card is for phones and tablets; desktop shows the text alone. */}
+        {!desktop && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ delay: 0.2, duration: 0.7 }}
+            className="relative"
+          >
+            <div
+              aria-hidden
+              className="absolute inset-10 -z-10 rounded-full bg-[radial-gradient(closest-side,rgb(226_187_102/0.35),transparent)] blur-2xl"
+            />
+            <HeroCard />
+            <p className="mt-2 text-center text-xs text-gray-500">Drag the card to spin it</p>
+          </motion.div>
+        )}
       </section>
 
       {/* Features */}
