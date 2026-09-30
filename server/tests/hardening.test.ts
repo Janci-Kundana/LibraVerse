@@ -1,3 +1,4 @@
+import { isDemoAddress } from '../src/core/mailer';
 import http from 'node:http';
 import type { AddressInfo } from 'node:net';
 import jwt from 'jsonwebtoken';
@@ -58,5 +59,14 @@ describe('error responses', () => {
     expect(res.status).toBe(400);
     expect(res.body.error.code).toBe('INVALID_JSON');
     expect(JSON.stringify(res.body)).not.toMatch(/at .*\.ts|node_modules/);
+  });
+});
+
+describe('demo mail addresses', () => {
+  it('recognises reserved and seeded demo domains only', () => {
+    for (const a of ['member@riverside.demo', 'x@city.test', 'k@example.com', 'a@b.invalid'])
+      expect(isDemoAddress(a)).toBe(true);
+    for (const a of ['someone@gmail.com', 'owner@library.in', 'x@demo.com', 'y@testing.org'])
+      expect(isDemoAddress(a)).toBe(false);
   });
 });

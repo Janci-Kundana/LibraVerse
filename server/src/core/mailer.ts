@@ -28,6 +28,12 @@ export async function sendMail(mail: Mail): Promise<void> {
     testOutbox.push(mail);
     return;
   }
+  if (isDemoAddress(mail.to)) {
+    // Seeded demo accounts use reserved domains nobody can receive mail at;
+    // sending would only bounce back to the real mailbox.
+    console.log(`[mail] not sent to demo address ${mail.to}: ${mail.subject}`);
+    return;
+  }
   if (!env.SMTP_HOST) {
     if (env.NODE_ENV === 'production') throw new Error('SMTP_HOST is not configured');
     console.log(
@@ -36,4 +42,13 @@ export async function sendMail(mail: Mail): Promise<void> {
     return;
   }
   await smtp().sendMail({ from: env.MAIL_FROM, ...mail });
+}
+
+/** Reserved or demo domains (RFC 2606 and the seeded ".demo" libraries). */
+export function isDemoAddress(to: string) {
+  const domain = to.split('@')[1]?.toLowerCase() ?? '';
+  return (
+    /\.(demo|test|example|invalid|localhost)$/.test(domain) ||
+    /^example\.(com|org|net)$/.test(domain)
+  );
 }

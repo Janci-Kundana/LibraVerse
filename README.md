@@ -71,6 +71,7 @@ Razorpay webhooks must reach the API: in development use a tunnel (for example `
 | `npm run lint` / `npm run format`                          | ESLint / Prettier                                                                                                |
 | `npm run build`                                            | Bundles the API to `server/dist` (tsup) and the client, with its service worker, to `client/dist`                |
 | `npm run seed:demo -w server`                              | Demo library and accounts (refuses to run in production)                                                         |
+| `npm run seed:world -w server`                             | After seed:demo: a year of realistic activity, a Pro library, a pending and a suspended one                      |
 | `npm run create-super-admin -w server -- <email> "<name>"` | Platform owner account with a set-password link                                                                  |
 | `npm run setup-keys -w server`                             | Paste each outside service's keys (hidden input) into `server/.env`, then check them                             |
 | `npm run check-services -w server`                         | Tests MongoDB, email, Cloudinary, Anthropic, Razorpay and Google settings without printing any secret            |

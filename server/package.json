@@ -12,7 +12,8 @@
     "seed:demo": "tsx src/scripts/seedDemo.ts",
     "setup-keys": "tsx src/scripts/setupKeys.ts",
     "check-services": "tsx src/scripts/checkServices.ts",
-    "render-env": "tsx src/scripts/renderEnv.ts"
+    "render-env": "tsx src/scripts/renderEnv.ts",
+    "seed:world": "tsx src/scripts/seedWorld.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.129.0",
