@@ -5,6 +5,7 @@ export interface Mail {
   to: string;
   subject: string;
   text: string;
+  attachments?: { filename: string; content: Buffer; contentType: string }[];
 }
 
 /** Mail "sent" while NODE_ENV=test, for assertions. */
@@ -30,7 +31,7 @@ export async function sendMail(mail: Mail): Promise<void> {
   if (!env.SMTP_HOST) {
     if (env.NODE_ENV === 'production') throw new Error('SMTP_HOST is not configured');
     console.log(
-      `\n--- email (SMTP not configured) ---\nTo: ${mail.to}\nSubject: ${mail.subject}\n\n${mail.text}\n---\n`,
+      `\n--- email (SMTP not configured) ---\nTo: ${mail.to}\nSubject: ${mail.subject}\n\n${mail.text}\n${(mail.attachments ?? []).map((a) => `[attachment: ${a.filename}]\n`).join('')}---\n`,
     );
     return;
   }

@@ -236,23 +236,19 @@ describe('returns (FR-16)', () => {
     const { lib, staff, codes } = await setup();
     const m = await activeMember(app, lib.id, 'reader@city.test');
     await staff.post('/api/circulation/issue').send({ memberToken: m.token, copyCode: codes[0] });
-    const damaged = await staff
-      .post('/api/circulation/return')
-      .send({
-        copyCode: codes[0],
-        condition: 'damaged',
-        damageCharge: 20000,
-        note: 'Water damage',
-      });
+    const damaged = await staff.post('/api/circulation/return').send({
+      copyCode: codes[0],
+      condition: 'damaged',
+      damageCharge: 20000,
+      note: 'Water damage',
+    });
     expect(damaged.body.loan).toMatchObject({ damageCharge: 20000, chargeNote: 'Water damage' });
 
     const loan2 = (
-      await staff
-        .post('/api/circulation/issue')
-        .send({
-          memberToken: (await activeMember(app, lib.id, 'b@city.test')).token,
-          copyCode: codes[1],
-        })
+      await staff.post('/api/circulation/issue').send({
+        memberToken: (await activeMember(app, lib.id, 'b@city.test')).token,
+        copyCode: codes[1],
+      })
     ).body;
     const lost = await staff.post(`/api/circulation/loans/${loan2.id}/lost`);
     expect(lost.body).toMatchObject({

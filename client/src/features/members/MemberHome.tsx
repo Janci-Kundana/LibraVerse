@@ -5,6 +5,7 @@ import { Button, Card, ErrorText } from '../../components/ui';
 import { api, errorMessage, post } from '../../lib/api';
 import { formatDate, readFileAsDataUrl, rupees } from '../../lib/format';
 import { HomeShell } from '../dashboard/DashboardLayout';
+import { PayButton } from '../payments/MemberPayments';
 
 export const PROFILE_KEY = ['member', 'profile'] as const;
 
@@ -35,19 +36,21 @@ export function MemberHome() {
             : 'No active membership plan yet.'}
         </p>
       </Card>
-      {!p.planName && <PlanList />}
+      <PlanList renewing={Boolean(p.planName)} />
     </HomeShell>
   );
 }
 
-function PlanList() {
+function PlanList({ renewing }: { renewing: boolean }) {
   const plans = useQuery({
     queryKey: ['member', 'plans'],
     queryFn: () => api<MembershipPlanDto[]>('/api/member/plans'),
   });
   return (
     <section className="mt-8">
-      <h2 className="text-lg font-semibold">Membership plans</h2>
+      <h2 className="text-lg font-semibold">
+        {renewing ? 'Renew or change plan' : 'Membership plans'}
+      </h2>
       <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
         {plans.data?.map((plan) => (
           <Card key={plan.id}>
@@ -57,10 +60,16 @@ function PlanList() {
               {plan.durationDays} days · {plan.bookLimit} books at a time ·{' '}
               {rupees(plan.finePerDay)}/day late
             </p>
+            <div className="mt-3">
+              <PayButton
+                charge={{ purpose: 'membership', planId: plan.id }}
+                label={`Buy for ${rupees(plan.price)}`}
+                withCoupon
+              />
+            </div>
           </Card>
         ))}
       </div>
-      <p className="mt-3 text-sm text-gray-500">Online payment opens soon.</p>
     </section>
   );
 }

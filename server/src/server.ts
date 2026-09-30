@@ -6,6 +6,7 @@ import { createApp } from './app';
 import { runAsSystem } from './core/tenant';
 import { ensureDefaultPlans } from './modules/platformPlans/service';
 import { startJobs } from './jobs/scheduler';
+import { attachRealtime } from './realtime/io';
 
 async function main() {
   await connectDb(env.MONGODB_URI);
@@ -15,6 +16,7 @@ async function main() {
   if (env.CRON_ENABLED) startJobs();
 
   const server = http.createServer(createApp());
+  attachRealtime(server);
   server.listen(env.PORT, () => {
     console.log(`API listening on http://localhost:${env.PORT}`);
   });

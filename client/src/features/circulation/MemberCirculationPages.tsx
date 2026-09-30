@@ -3,6 +3,7 @@ import type { MemberCardDto, MemberLoansDto } from '@libraverse/shared';
 import { Button, Card, ErrorText, PageHeader, StatusPill } from '../../components/ui';
 import { api, errorMessage, post } from '../../lib/api';
 import { formatDate, rupees } from '../../lib/format';
+import { PayButton } from '../payments/MemberPayments';
 import { LoanSummary } from './LoanRow';
 
 export const MEMBER_LOANS_KEY = ['member', 'loans'] as const;
@@ -72,6 +73,11 @@ export function MyLoansPage() {
         >
           You owe {rupees(d.pendingDues)} in fines. Pay it to keep borrowing.
         </p>
+      )}
+      {d.pendingDues > 0 && (
+        <div className="mb-6">
+          <PayButton charge={{ purpose: 'fine' }} label={`Pay ${rupees(d.pendingDues)} now`} />
+        </div>
       )}
       <ErrorText>
         {renew.error ? errorMessage(renew.error) : cancel.error ? errorMessage(cancel.error) : ''}

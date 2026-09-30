@@ -2,6 +2,12 @@ import type { ReactNode } from 'react';
 import { createBrowserRouter, type RouteObject } from 'react-router';
 import { AdminLibrariesPage } from '../features/admin/AdminLibrariesPage';
 import { CounterPage } from '../features/circulation/CounterPage';
+import { MyPaymentsPage } from '../features/payments/MemberPayments';
+import {
+  PaymentSettingsPage,
+  PaymentsPage,
+  PublicPayPage,
+} from '../features/payments/StaffPayments';
 import { LoansPage, ReservationsPage } from '../features/circulation/LoansPage';
 import { CardPage, MyLoansPage } from '../features/circulation/MemberCirculationPages';
 import {
@@ -49,6 +55,7 @@ export const routes: RouteObject[] = [
   { path: '/set-password', element: <SetPasswordPage /> },
   { path: '/register-library', element: <RegisterLibraryPage /> },
   { path: '/join', element: <JoinPage /> },
+  { path: '/pay/:token', element: <PublicPayPage /> },
   {
     path: '/admin',
     element: (
@@ -72,6 +79,8 @@ export const routes: RouteObject[] = [
       { index: true, element: <LibraryHome /> },
       { path: 'counter', element: <CounterPage /> },
       { path: 'loans', element: <LoansPage /> },
+      { path: 'payments', element: <PaymentsPage /> },
+      { path: 'payment-settings', element: adminOnly(<PaymentSettingsPage />) },
       { path: 'reservations', element: <ReservationsPage /> },
       { path: 'verifications', element: <VerificationsPage /> },
       { path: 'catalog', element: <StaffCatalogPage /> },
@@ -96,6 +105,7 @@ export const routes: RouteObject[] = [
       { index: true, element: <MemberHome /> },
       { path: 'card', element: verified(<CardPage />) },
       { path: 'loans', element: verified(<MyLoansPage />) },
+      { path: 'payments', element: verified(<MyPaymentsPage />) },
       { path: 'catalog', element: verified(<MemberCatalogPage />) },
       { path: 'books/:id', element: verified(<MemberBookPage />) },
       { path: 'wishlist', element: verified(<WishlistPage />) },

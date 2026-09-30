@@ -12,6 +12,7 @@ import { BookCopyModel } from '../src/modules/copies/model';
 import { ReviewModel } from '../src/modules/reviews/model';
 import { CouponModel } from '../src/modules/coupons/model';
 import { LoanModel } from '../src/modules/loans/model';
+import { PaymentModel } from '../src/modules/payments/model';
 import { ReservationModel } from '../src/modules/reservations/model';
 import { MemberProfileModel } from '../src/modules/members/model';
 import { MembershipPlanModel } from '../src/modules/membershipPlans/model';
@@ -114,6 +115,17 @@ const TENANT_MODELS: TenantCase[] = [
     update: { status: 'cancelled' },
   },
   {
+    model: PaymentModel,
+    data: () => ({
+      memberId: new Types.ObjectId(),
+      purpose: 'membership',
+      method: 'online',
+      amount: 1000,
+      expiresAt: new Date(),
+    }),
+    update: { amount: 7777 },
+  },
+  {
     model: AuditLogModel,
     data: (tag) => ({
       seq: tag.length,
@@ -127,7 +139,7 @@ const TENANT_MODELS: TenantCase[] = [
 ];
 
 // Collections that belong to the platform, not to one library.
-const PLATFORM_MODELS = ['Library', 'PlatformPlan', 'Session'];
+const PLATFORM_MODELS = ['Library', 'PlatformPlan', 'Session', 'WebhookEvent'];
 
 describe.each(TENANT_MODELS.map((c) => [c.model.modelName, c] as const))(
   'tenant isolation: %s',

@@ -9,10 +9,20 @@ const envSchema = z.object({
     .string()
     .regex(/^mongodb(\+srv)?:\/\//, 'must be a mongodb:// or mongodb+srv:// URI'),
   CLIENT_URL: z.url().default('http://localhost:5173'),
+  // Public URL of this API (for webhook URLs shown to admins). Defaults to CLIENT_URL,
+  // which proxies /api in development.
+  PUBLIC_API_URL: z
+    .url()
+    .optional()
+    .or(z.literal('').transform(() => undefined)),
   JWT_ACCESS_SECRET: secret,
   JWT_REFRESH_SECRET: secret,
   // Signs member card QR codes (HMAC of member id + library id).
   CARD_QR_SECRET: secret,
+  // AES-256-GCM key for per-library Razorpay secrets: 32 random bytes, base64.
+  ENCRYPTION_KEY: z
+    .string()
+    .refine((v) => Buffer.from(v, 'base64').length === 32, 'must be 32 bytes, base64-encoded'),
   // Background jobs (reminders, expiries). Off in tests; set false to disable elsewhere.
   CRON_ENABLED: z
     .enum(['true', 'false'])

@@ -1,6 +1,15 @@
 import { Schema, model, type InferSchemaType } from 'mongoose';
 import { LIBRARY_STATUSES } from '@libraverse/shared';
 
+const encryptedValue = new Schema(
+  {
+    iv: { type: String, required: true },
+    tag: { type: String, required: true },
+    data: { type: String, required: true },
+  },
+  { _id: false },
+);
+
 // Platform-level: one record per tenant. Holds only library-level facts, so the
 // Super Admin can manage libraries without reading their users.
 const librarySchema = new Schema(
@@ -13,8 +22,11 @@ const librarySchema = new Schema(
     cardColours: { type: [String], default: [] },
     status: { type: String, enum: LIBRARY_STATUSES, default: 'pending', index: true },
     statusReason: { type: String, default: null },
-    // Filled in Phase 5; razorpaySecret and the webhook secret are stored encrypted.
+    // Each library's own Razorpay account (test mode). Secrets are AES-256-GCM
+    // encrypted, never selected by default, and never returned by the API.
     razorpayKeyId: { type: String, default: null },
+    razorpayKeySecret: { type: encryptedValue, default: null, select: false },
+    razorpayWebhookSecret: { type: encryptedValue, default: null, select: false },
     circulation: {
       type: new Schema(
         {

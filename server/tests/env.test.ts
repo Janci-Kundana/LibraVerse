@@ -4,6 +4,7 @@ const secrets = {
   JWT_ACCESS_SECRET: 'a'.repeat(32),
   JWT_REFRESH_SECRET: 'b'.repeat(32),
   CARD_QR_SECRET: 'c'.repeat(32),
+  ENCRYPTION_KEY: Buffer.alloc(32).toString('base64'),
 };
 
 describe('parseEnv', () => {

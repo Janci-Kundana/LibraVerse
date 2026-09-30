@@ -5,6 +5,7 @@ import { QrScanner } from '../../components/QrScanner';
 import { Button, Card, ErrorText, Field, PageHeader, StatusPill } from '../../components/ui';
 import { api, errorMessage, post } from '../../lib/api';
 import { formatDate, rupees, toPaise } from '../../lib/format';
+import { CollectPayment } from '../payments/StaffPayments';
 import { LoanSummary } from './LoanRow';
 
 type Tab = 'issue' | 'return';
@@ -122,6 +123,15 @@ function IssuePanel() {
             </ul>
           )}
         </Card>
+      )}
+
+      {m && token && m.membershipStatus !== 'unverified' && (
+        <CollectPayment
+          key={token}
+          member={m}
+          memberToken={token}
+          onPaid={() => scan.mutate(token)}
+        />
       )}
 
       {m?.canBorrow && (

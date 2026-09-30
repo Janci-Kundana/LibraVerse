@@ -18,6 +18,13 @@ import { fileRoutes } from './modules/files/routes';
 import { librarySettingsRoutes, publicLibraryRoutes } from './modules/librarySettings/routes';
 import { joinRoutes, memberRoutes, verificationRoutes } from './modules/members/routes';
 import { membershipPlanRoutes } from './modules/membershipPlans/routes';
+import {
+  memberPaymentRoutes,
+  paymentSettingsRoutes,
+  publicPayRoutes,
+  staffPaymentRoutes,
+  webhookRoutes,
+} from './modules/payments/routes';
 import { staffRoutes } from './modules/staff/routes';
 
 // Routes that accept files (as data URLs) or CSV get a larger body limit.
@@ -31,8 +38,9 @@ export function createApp() {
   app.use(helmet());
   app.use(cors({ origin: env.CLIENT_URL, credentials: true }));
   app.use(cookieParser());
-  // Razorpay webhooks need the raw body for signature checks; they will be
-  // mounted above this line in Phase 5.
+  // Razorpay webhooks verify an HMAC over the raw body, so they are mounted
+  // before any JSON parsing.
+  app.use('/api/webhooks', webhookRoutes);
   const smallJson = express.json({ limit: '1mb' });
   const uploadJson = express.json({ limit: '8mb' });
   app.use((req, res, next) => (isUpload(req.path) ? uploadJson : smallJson)(req, res, next));
@@ -61,6 +69,10 @@ export function createApp() {
   app.use('/api/copies', copyRoutes);
   app.use('/api/member/catalog', catalogRoutes);
   app.use('/api/circulation', circulationRoutes);
+  app.use('/api/library/payment-settings', paymentSettingsRoutes);
+  app.use('/api/payments', staffPaymentRoutes);
+  app.use('/api/member/payments', memberPaymentRoutes);
+  app.use('/api/pay', publicPayRoutes);
   app.use('/api/member', memberCirculationRoutes);
   app.use('/api/member', memberRoutes);
   app.use('/api/verifications', verificationRoutes);

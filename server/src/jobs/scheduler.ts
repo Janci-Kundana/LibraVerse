@@ -2,6 +2,7 @@ import cron from 'node-cron';
 import { runAsSystem } from '../core/tenant';
 import { LibraryModel } from '../modules/libraries/model';
 import { expireReservationHolds, sendExpiryReminders, sendLoanReminders } from './circulation';
+import { expireUnpaid } from './payments';
 
 type PerLibraryJob = (libraryId: string, now: Date) => Promise<unknown>;
 
@@ -24,6 +25,7 @@ const jobs: { name: string; schedule: string; run: PerLibraryJob }[] = [
   { name: 'loan-reminders', schedule: '0 9 * * *', run: sendLoanReminders }, // daily 09:00
   { name: 'expiry-reminders', schedule: '15 9 * * *', run: sendExpiryReminders },
   { name: 'reservation-holds', schedule: '0 * * * *', run: expireReservationHolds }, // hourly
+  { name: 'payment-expiry', schedule: '* * * * *', run: expireUnpaid }, // every minute
 ];
 
 export function registerJob(name: string, schedule: string, run: PerLibraryJob) {

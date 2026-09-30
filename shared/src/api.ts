@@ -1,5 +1,8 @@
 import type {
   CardTier,
+  PaymentMethod,
+  PaymentPurpose,
+  PaymentStatus,
   CopyStatus,
   LibraryStatus,
   PlatformPlanCode,
@@ -316,4 +319,72 @@ export interface MemberLoansDto {
   history: LoanDto[];
   pendingDues: number;
   reservations: ReservationDto[];
+}
+
+export interface PaymentSettingsDto {
+  keyId: string | null;
+  keySecretSet: boolean;
+  webhookSecretSet: boolean;
+  /** paste this into the Razorpay dashboard's webhook settings */
+  webhookUrl: string;
+}
+
+export interface PaymentDto {
+  id: string;
+  memberId: string;
+  memberName: string;
+  purpose: PaymentPurpose;
+  /** paise, after any coupon */
+  amount: number;
+  discount: number;
+  couponCode: string | null;
+  planName: string | null;
+  method: PaymentMethod;
+  status: PaymentStatus;
+  expiresAt: string;
+  createdAt: string;
+  paidAt: string | null;
+  receiptNo: string | null;
+  collectedByName: string | null;
+  refund: { amount: number; reason: string; refundedAt: string } | null;
+  lateCaptureRefunded: boolean;
+}
+
+/** What the browser needs to open Razorpay Checkout for a payment request. */
+export interface CheckoutDto {
+  payment: PaymentDto;
+  orderId: string;
+  keyId: string;
+  libraryName: string;
+  prefill: { name: string; email: string };
+}
+
+/** Counter UPI QR: the member scans a link to /pay/:token on their phone. */
+export interface CounterRequestDto {
+  payment: PaymentDto;
+  /** null for cash, which succeeds immediately */
+  payUrl: string | null;
+  payQrDataUrl: string | null;
+}
+
+/** Public view of a payment for /pay/:token. */
+export interface PublicPayDto {
+  paymentId: string;
+  libraryName: string;
+  description: string;
+  amount: number;
+  status: PaymentStatus;
+  expiresAt: string;
+  orderId: string | null;
+  keyId: string | null;
+}
+
+/** Pushed over Socket.io when a payment changes state. */
+export interface PaymentUpdatedEvent {
+  paymentId: string;
+  status: PaymentStatus;
+  purpose: PaymentPurpose;
+  amount: number;
+  memberId: string;
+  memberName: string;
 }

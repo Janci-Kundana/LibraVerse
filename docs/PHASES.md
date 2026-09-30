@@ -35,6 +35,10 @@ Status: **approved 2026-09-29**. Each phase ends with green tests, run instructi
 - Fines are whole days late (any part of a day counts) × the plan's fine per day, snapshotted on the loan at issue. Late fines and lost/damage charges live on the loan until paid (`duesPaidAt`); any unpaid dues or an overdue loan block new issues (TC-05).
 - Circulation settings (loan days 14, renewals 2, hold days 3, lost-book charge ₹500) are per library, editable by the admin. Reservations are only allowed when no copy is on the shelf; a returned copy is held for the first waiting member (TC-09).
 - Background jobs run in system context only to list active libraries, then per library in its tenant context; `CRON_ENABLED=false` turns them off.
+- Payments: 10-minute window; Razorpay Checkout opens with `retry.enabled=false`, so a failed attempt ends the request (terminal `failed`) and paying again creates a new one. Only `rzp_test_` keys are accepted. Refunds are recorded on the payment (`refund`) and do not change its status; they do not revoke a membership automatically.
+- Webhook deliveries are de-duplicated by `x-razorpay-event-id` (platform-level `webhookEvents`, 30-day TTL); an amount mismatch is audited and never credits.
+- The counter pay link `/pay/:token` uses a 144-bit random token, which resolves the tenant (system-context lookup keyed by that token only).
+- Jest runs with `maxWorkers: 4`: every suite shares one in-memory mongod.
 - Mongoose is pinned to **v8** (MongoDB driver 6). With Mongoose 9 / driver 7, the connection handshake fails inside Jest's VM sandbox ("Missing required sub-document 'driver' in the client metadata document"), although it works in plain Node. Revisit when upgrading.
 
 ## Progress
@@ -44,3 +48,4 @@ Status: **approved 2026-09-29**. Each phase ends with green tests, run instructi
 - [x] Phase 2: Library setup and members (2026-09-30)
 - [x] Phase 3: Catalog and discovery (2026-09-30)
 - [x] Phase 4: Circulation (2026-09-30)
+- [x] Phase 5: Payments and live updates (2026-09-30)
