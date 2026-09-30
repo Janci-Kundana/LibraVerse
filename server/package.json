@@ -9,7 +9,10 @@
     "test": "jest",
     "typecheck": "tsc --noEmit",
     "create-super-admin": "tsx src/scripts/createSuperAdmin.ts",
-    "seed:demo": "tsx src/scripts/seedDemo.ts"
+    "seed:demo": "tsx src/scripts/seedDemo.ts",
+    "setup-keys": "tsx src/scripts/setupKeys.ts",
+    "check-services": "tsx src/scripts/checkServices.ts",
+    "render-env": "tsx src/scripts/renderEnv.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.129.0",

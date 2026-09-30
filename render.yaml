@@ -26,9 +26,9 @@ services:
       - key: JWT_REFRESH_SECRET
         generateValue: true
       - key: CARD_QR_SECRET
-        generateValue: true
+        sync: false # same as server/.env: issued card QRs are signed with it
       - key: ENCRYPTION_KEY
-        sync: false # 32 random bytes, base64 - see server/.env.example
+        sync: false # same as server/.env: the shared database holds values encrypted with it
       - key: SMTP_HOST
         sync: false
       - key: SMTP_PORT

@@ -72,13 +72,18 @@ Razorpay webhooks must reach the API: in development use a tunnel (for example `
 | `npm run build`                                            | Bundles the API to `server/dist` (tsup) and the client, with its service worker, to `client/dist`                |
 | `npm run seed:demo -w server`                              | Demo library and accounts (refuses to run in production)                                                         |
 | `npm run create-super-admin -w server -- <email> "<name>"` | Platform owner account with a set-password link                                                                  |
+| `npm run setup-keys -w server`                             | Paste each outside service's keys (hidden input) into `server/.env`, then check them                             |
+| `npm run check-services -w server`                         | Tests MongoDB, email, Cloudinary, Anthropic, Razorpay and Google settings without printing any secret            |
+| `npm run render-env -w server -- [site-url] [api-url]`     | Writes the production settings to `~/Desktop/libraverse-render.env` for Render's "Add from .env"                 |
 
 ## Deploying (Render + Vercel + MongoDB Atlas)
 
-1. **API on Render:** New → Blueprint → pick this repository; `render.yaml` defines the service. Fill in the secrets it asks for (`MONGODB_URI`, `CLIENT_URL` = your Vercel URL, `PUBLIC_API_URL` = the Render URL, `ENCRYPTION_KEY`, and any optional ones). JWT and card secrets are generated. In Atlas → Network Access, allow Render's outbound IPs (or `0.0.0.0/0` for a demo).
-2. **Web app on Vercel:** import the repository with **Root Directory `client`**. In `client/vercel.json`, replace `REPLACE-WITH-YOUR-RENDER-SERVICE` with your Render host so `/api` is proxied (cookies stay first-party). Set `VITE_SOCKET_URL` to the Render URL for live updates.
-3. **Razorpay:** each library pastes the webhook URL shown on its Online payments page into Razorpay (events `payment.captured`, `payment.failed`); the platform webhook is `<PUBLIC_API_URL>/api/webhooks/razorpay/platform`.
-4. Create the Super Admin: in the Render shell, `npm run create-super-admin -w server -- you@example.com "Your Name"`.
+1. **Keys:** `npm run setup-keys -w server` (in your own terminal), then `npm run render-env -w server`. It keeps `ENCRYPTION_KEY` and `CARD_QR_SECRET` the same as local, because the shared Atlas database holds values encrypted with them and issued card QRs are signed with them.
+2. **API on Render:** New → Blueprint → pick this repository (`render.yaml` defines `libraverse-api`). In the service's Environment, use "Add from .env" with `~/Desktop/libraverse-render.env`, then delete that file. In Atlas → Network Access, allow Render's outbound IPs (or `0.0.0.0/0` for a demo).
+3. **Web app on Vercel:** import the repository with **Root Directory `client`**. `client/vercel.json` proxies `/api` to `https://libraverse-api.onrender.com` (change it if Render gave the service another name). Set `VITE_SOCKET_URL` to the Render URL for live updates.
+4. **Razorpay:** each library pastes the webhook URL shown on its Online payments page into Razorpay (events `payment.captured`, `payment.failed`); the platform webhook is `<PUBLIC_API_URL>/api/webhooks/razorpay/platform`.
+5. **Google sign-in:** add the Vercel URL (and `http://localhost:5173`) to the OAuth client's Authorised JavaScript origins.
+6. **Super Admin:** `npm run create-super-admin -w server -- you@example.com "Your Name"` (locally or in the Render shell; both use the same database).
 
 ## Screenshots
 
