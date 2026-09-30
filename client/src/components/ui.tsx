@@ -47,11 +47,11 @@ export function AuthCard({
   return (
     <main className="relative grid min-h-dvh lg:grid-cols-[1.05fr_1fr]">
       <Aurora />
-      <aside className="relative hidden flex-col justify-between overflow-hidden border-r border-white/5 p-12 lg:flex">
+      <aside className="relative hidden flex-col overflow-hidden border-r border-white/5 p-12 lg:flex">
         <Link to="/">
           <Wordmark />
         </Link>
-        <div>
+        <div className="my-auto">
           <h2 className="max-w-md text-4xl font-bold leading-tight">
             Your library, <span className="text-gradient">beautifully digital.</span>
           </h2>
@@ -66,7 +66,6 @@ export function AuthCard({
             ))}
           </ul>
         </div>
-        <MiniCard className="mx-auto w-80 animate-float" />
       </aside>
 
       <div className="flex flex-col items-center justify-center px-4 py-12">
