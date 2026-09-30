@@ -9,6 +9,7 @@ import {
 } from '@libraverse/shared';
 import { AuthCard, Button, ErrorText, Field } from '../../components/ui';
 import { ApiRequestError, errorMessage, post } from '../../lib/api';
+import { GoogleButton } from './GoogleButton';
 import { ME_KEY } from './useAuth';
 
 const ROLE_LABELS = {
@@ -59,9 +60,14 @@ export function LoginPage() {
     }
   }
 
+  // Set after a Google sign-in, so choosing a library resends the same credential.
+  const [googleCredential, setGoogleCredential] = useState<string | null>(null);
+
   const signIn = (libraryId?: string | null) =>
     run(async () => {
-      const res = await post<LoginResponse>('/api/auth/login', { email, password, libraryId });
+      const res = googleCredential
+        ? await post<LoginResponse>('/api/auth/google', { credential: googleCredential, libraryId })
+        : await post<LoginResponse>('/api/auth/login', { email, password, libraryId });
       if (res.status === 'twoFactorRequired') {
         setStep({ kind: 'otp', challengeToken: res.challengeToken });
       } else {
@@ -78,8 +84,20 @@ export function LoginPage() {
   const onSubmit = (e: FormEvent) => {
     e.preventDefault();
     if (step.kind === 'otp') void verifyCode(step.challengeToken);
-    else void signIn();
+    else {
+      setGoogleCredential(null);
+      void signIn();
+    }
   };
+
+  const signInWithGoogle = (credential: string) =>
+    run(async () => {
+      setGoogleCredential(credential);
+      const res = await post<LoginResponse>('/api/auth/google', { credential });
+      if (res.status === 'twoFactorRequired')
+        setStep({ kind: 'otp', challengeToken: res.challengeToken });
+      else finish(res.user);
+    });
 
   if (step.kind === 'chooseLibrary') {
     return (
@@ -182,6 +200,9 @@ export function LoginPage() {
         >
           Forgot password?
         </Link>
+      )}
+      {step.kind === 'credentials' && (
+        <GoogleButton onCredential={(c) => void signInWithGoogle(c)} />
       )}
     </AuthCard>
   );

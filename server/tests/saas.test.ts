@@ -156,15 +156,13 @@ describe('Pro registration and SaaS billing', () => {
     const admin = await superAdmin();
     const plans = (await admin.get('/api/admin/plans')).body;
     const pro = plans.find((p: { code: string }) => p.code === 'pro');
-    const res = await admin
-      .put(`/api/admin/plans/${pro.id}`)
-      .send({
-        name: 'Pro',
-        monthlyPrice: 149900,
-        memberLimit: null,
-        branchLimit: 20,
-        active: true,
-      });
+    const res = await admin.put(`/api/admin/plans/${pro.id}`).send({
+      name: 'Pro',
+      monthlyPrice: 149900,
+      memberLimit: null,
+      branchLimit: 20,
+      active: true,
+    });
     expect(res.body).toMatchObject({ monthlyPrice: 149900, branchLimit: 20 });
     const lib = await createLibrary('city');
     await createUser({ libraryId: lib.id, role: 'libraryAdmin', email: 'owner@city.test' });
@@ -249,14 +247,12 @@ describe('notification centre and events', () => {
     const staff = await signedInAgent(app, 'staff@city.test');
     const m = await activeMember(app, lib.id, 'reader@city.test');
 
-    const ev = await staff
-      .post('/api/events')
-      .send({
-        kind: 'announcement',
-        title: 'Closed on Monday',
-        description: 'Holiday',
-        notifyMembers: true,
-      });
+    const ev = await staff.post('/api/events').send({
+      kind: 'announcement',
+      title: 'Closed on Monday',
+      description: 'Holiday',
+      notifyMembers: true,
+    });
     expect(ev.status).toBe(201);
     const inbox = await m.agent.get('/api/notifications');
     expect(inbox.body).toMatchObject({

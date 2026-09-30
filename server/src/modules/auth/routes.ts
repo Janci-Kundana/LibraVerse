@@ -8,6 +8,8 @@ export const authRoutes = Router();
 
 authRoutes.post('/login', validateBody(v.loginBody), c.login);
 authRoutes.post('/login/otp', validateBody(v.loginOtpBody), c.loginOtp);
+authRoutes.post('/google', validateBody(v.googleLoginBody), c.googleLogin);
+authRoutes.get('/config', c.config);
 authRoutes.post('/refresh', c.refresh);
 authRoutes.post('/logout', c.logout);
 authRoutes.get('/me', authenticate, c.me);

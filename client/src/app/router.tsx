@@ -30,7 +30,9 @@ import { LoginPage } from '../features/auth/LoginPage';
 import { RequireRole } from '../features/auth/RequireRole';
 import { SetPasswordPage } from '../features/auth/SetPasswordPage';
 import { DashboardLayout } from '../features/dashboard/DashboardLayout';
-import { LibraryHome } from '../features/dashboard/homes';
+import { LibraryHome } from '../features/reports/ReportPages';
+import { AuditLogPage, PlatformAnalyticsPage } from '../features/reports/ReportPages';
+import { AssistantPage } from '../features/assistant/AssistantPage';
 import { SecurityPage } from '../features/dashboard/SecurityPage';
 import { LandingPage } from '../features/landing/LandingPage';
 import { NotFoundPage } from '../features/landing/NotFoundPage';
@@ -71,6 +73,7 @@ export const routes: RouteObject[] = [
     children: [
       { index: true, element: <AdminLibrariesPage /> },
       { path: 'plans', element: <AdminPlansPage /> },
+      { path: 'analytics', element: <PlatformAnalyticsPage /> },
       { path: 'security', element: <SecurityPage /> },
     ],
   },
@@ -89,6 +92,7 @@ export const routes: RouteObject[] = [
       { path: 'donations', element: <DonationsPage /> },
       { path: 'events', element: <StaffEventsPage /> },
       { path: 'subscription', element: adminOnly(<SubscriptionPage />) },
+      { path: 'audit', element: adminOnly(<AuditLogPage />) },
       { path: 'payment-settings', element: adminOnly(<PaymentSettingsPage />) },
       { path: 'reservations', element: <ReservationsPage /> },
       { path: 'verifications', element: <VerificationsPage /> },
@@ -116,6 +120,7 @@ export const routes: RouteObject[] = [
       { path: 'loans', element: verified(<MyLoansPage />) },
       { path: 'payments', element: verified(<MyPaymentsPage />) },
       { path: 'events', element: verified(<MemberEventsPage />) },
+      { path: 'assistant', element: verified(<AssistantPage />) },
       { path: 'catalog', element: verified(<MemberCatalogPage />) },
       { path: 'books/:id', element: verified(<MemberBookPage />) },
       { path: 'wishlist', element: verified(<WishlistPage />) },

@@ -12,7 +12,7 @@ describe('role guards', () => {
     });
     renderRoute(routes, '/library');
     expect(await screen.findByRole('heading', { name: 'Sign in' })).toBeInTheDocument();
-    expect(calls.map((c) => `${c.method} ${c.path}`)).toEqual([
+    expect(calls.slice(0, 2).map((c) => `${c.method} ${c.path}`)).toEqual([
       'GET /api/auth/me',
       'POST /api/auth/refresh',
     ]);

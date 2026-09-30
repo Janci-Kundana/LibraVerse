@@ -13,6 +13,7 @@ interface NavItem {
 const NAV: Record<Role, NavItem[]> = {
   superAdmin: [
     { to: '/admin', label: 'Libraries' },
+    { to: '/admin/analytics', label: 'Analytics' },
     { to: '/admin/plans', label: 'Plans' },
     { to: '/admin/security', label: 'Security' },
   ],
@@ -32,6 +33,7 @@ const NAV: Record<Role, NavItem[]> = {
     { to: '/library/settings', label: 'Settings' },
     { to: '/library/payment-settings', label: 'Online payments' },
     { to: '/library/subscription', label: 'Subscription' },
+    { to: '/library/audit', label: 'Audit log' },
     { to: '/library/security', label: 'Security' },
   ],
   librarian: [
@@ -51,6 +53,7 @@ const NAV: Record<Role, NavItem[]> = {
     { to: '/member/loans', label: 'My books' },
     { to: '/member/payments', label: 'Payments' },
     { to: '/member/events', label: 'Notice board' },
+    { to: '/member/assistant', label: 'Ask the library' },
     { to: '/member/catalog', label: 'Catalog' },
     { to: '/member/wishlist', label: 'Wishlist' },
   ],

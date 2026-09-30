@@ -44,6 +44,10 @@ Status: **approved 2026-09-29**. Each phase ends with green tests, run instructi
 - Platform billing uses the platform's own Razorpay account (`PLATFORM_RAZORPAY_*`, optional). Every library starts on Free; a verified Pro payment (webhook `/api/webhooks/razorpay/platform`) switches the subscription to Pro for 30 days (starting at approval for a pending library). `platformPayments` is platform-owned data keyed by `billedLibraryId`, and its status goes through the same `transitionPayment()`. Rejecting a paid library refunds it (TC-10). A lapsed Pro month drops to Free by cron; downgrading is refused while over Free's limits.
 - Donations: offered → accepted | declined; accepted → catalogued (book created with `donatedBy`, or "Anonymous"); a member donor gets the `contributor` badge (TC-11).
 - In-app notifications are a third `notify()` channel (with email and push), stored per user and pushed live as `notification:new`.
+- AI assistant: `claude-opus-5-5` (effort `low`, server-side refusal fallbacks `fallbacks: "default"`), a bounded manual tool loop (≤5 rounds) with three read-only tools that run in the member's tenant context: `search_catalog`, `get_library_rules`, `get_my_account`. Off unless `ANTHROPIC_API_KEY` is set.
+- Google sign-in only signs in existing accounts with a Google-verified email (never creates one: members join with ID proof, staff are invited); it shares the library-choice and staff-2FA steps with password login. Off unless `GOOGLE_CLIENT_ID` is set.
+- Charts are hand-built SVG (single series, validated brand crimson on the dark surface, hover tooltips, table view) rather than a chart library.
+- Known: `npm audit` reports 2 moderate advisories in `uuid` via exceljs; they affect only callers passing a buffer, which this code never does.
 - Mongoose is pinned to **v8** (MongoDB driver 6). With Mongoose 9 / driver 7, the connection handshake fails inside Jest's VM sandbox ("Missing required sub-document 'driver' in the client metadata document"), although it works in plain Node. Revisit when upgrading.
 
 ## Progress
@@ -56,3 +60,4 @@ Status: **approved 2026-09-29**. Each phase ends with green tests, run instructi
 - [x] Phase 5: Payments and live updates (2026-09-30)
 - [x] Phase 6: 3D card and PWA (2026-09-30)
 - [x] Phase 7: SaaS billing, donations, notifications, events (2026-09-30)
+- [x] Phase 8: Reports, analytics, AI, Google login (2026-09-30)

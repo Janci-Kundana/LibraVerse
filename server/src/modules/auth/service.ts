@@ -1,4 +1,5 @@
 import bcrypt from 'bcrypt';
+import { OAuth2Client } from 'google-auth-library';
 import { Types } from 'mongoose';
 import { isStaff, type AuthUser, type LibraryChoice } from '@libraverse/shared';
 import { env } from '../../config/env';
@@ -146,48 +147,116 @@ export function login(input: {
       throw invalidCredentials();
     }
 
-    let matches: UserDoc[] = [];
+    const matches: UserDoc[] = [];
     for (const user of candidates) {
       if (user.passwordHash && (await bcrypt.compare(input.password, user.passwordHash))) {
         matches.push(user);
       }
     }
-    if (input.libraryId !== undefined) {
-      matches = matches.filter((u) => String(u.libraryId ?? null) === String(input.libraryId));
-    }
-    if (matches.length === 0) throw invalidCredentials();
+    return completeLogin(matches, input.libraryId, invalidCredentials);
+  });
+}
 
-    if (matches.length > 1) {
-      const names = await libraryNames(matches.map((u) => u.libraryId));
-      const choices: LibraryChoice[] = matches.map((u) => ({
-        libraryId: u.libraryId ? String(u.libraryId) : null,
-        libraryName: u.libraryId
-          ? (names.get(String(u.libraryId)) ?? 'Unknown library')
-          : 'LibraVerse platform',
-        role: u.role,
-      }));
-      throw new AppError(
-        409,
-        'LIBRARY_CHOICE_REQUIRED',
-        'This email has accounts in several libraries. Choose one.',
-        choices,
-      );
-    }
+/**
+ * Shared by password and Google sign-in: pick the account (asking which library
+ * when several match), check the library is active, then 2FA or a session.
+ */
+async function completeLogin(
+  candidates: UserDoc[],
+  libraryId: string | null | undefined,
+  noMatch: () => AppError,
+): Promise<LoginResult> {
+  let matches = candidates;
+  if (libraryId !== undefined) {
+    matches = matches.filter((u) => String(u.libraryId ?? null) === String(libraryId));
+  }
+  if (matches.length === 0) throw noMatch();
 
-    const user = matches[0]!;
-    await assertLibraryActive(user);
+  if (matches.length > 1) {
+    const names = await libraryNames(matches.map((u) => u.libraryId));
+    const choices: LibraryChoice[] = matches.map((u) => ({
+      libraryId: u.libraryId ? String(u.libraryId) : null,
+      libraryName: u.libraryId
+        ? (names.get(String(u.libraryId)) ?? 'Unknown library')
+        : 'LibraVerse platform',
+      role: u.role,
+    }));
+    throw new AppError(
+      409,
+      'LIBRARY_CHOICE_REQUIRED',
+      'This email has accounts in several libraries. Choose one.',
+      choices,
+    );
+  }
 
-    if (user.twoFactorEnabled && isStaff(user.role)) {
-      const code = await setOtp([user], 'login');
-      await sendMail({
-        to: user.email,
-        subject: 'Your LibraVerse sign-in code',
-        text: `Your sign-in code is ${code}. It expires in 10 minutes.\n\nIf you did not try to sign in, change your password.`,
-      });
-      return { status: 'twoFactorRequired', challengeToken: signChallenge(String(user._id)) };
-    }
+  const user = matches[0]!;
+  await assertLibraryActive(user);
 
-    return { status: 'ok', user: await toAuthUser(user), tokens: await startSession(user) };
+  if (user.twoFactorEnabled && isStaff(user.role)) {
+    const code = await setOtp([user], 'login');
+    await sendMail({
+      to: user.email,
+      subject: 'Your LibraVerse sign-in code',
+      text: `Your sign-in code is ${code}. It expires in 10 minutes.\n\nIf you did not try to sign in, change your password.`,
+    });
+    return { status: 'twoFactorRequired', challengeToken: signChallenge(String(user._id)) };
+  }
+
+  return { status: 'ok', user: await toAuthUser(user), tokens: await startSession(user) };
+}
+
+// ---------------------------------------------------------------- Google (FR-04)
+
+type GoogleVerifier = (
+  idToken: string,
+) => Promise<{ email?: string; email_verified?: boolean } | undefined>;
+let googleVerifier: GoogleVerifier | null = null;
+
+/** Tests replace Google's token check. */
+export function setGoogleVerifier(v: GoogleVerifier | null) {
+  googleVerifier = v;
+}
+
+export const googleEnabled = () => Boolean(env.GOOGLE_CLIENT_ID);
+
+async function verifyGoogleToken(idToken: string) {
+  if (googleVerifier) return googleVerifier(idToken);
+  const client = new OAuth2Client(env.GOOGLE_CLIENT_ID);
+  const ticket = await client.verifyIdToken({ idToken, audience: env.GOOGLE_CLIENT_ID });
+  return ticket.getPayload();
+}
+
+/**
+ * Signs in an existing account whose email Google has verified. Google never
+ * creates accounts: members join with an ID proof, staff are invited.
+ */
+export async function loginWithGoogle(
+  credential: string,
+  libraryId?: string | null,
+): Promise<LoginResult> {
+  if (!googleEnabled()) throw new AppError(404, 'GOOGLE_OFF', 'Google sign-in is not enabled');
+  let payload;
+  try {
+    payload = await verifyGoogleToken(credential);
+  } catch {
+    throw new AppError(401, 'INVALID_GOOGLE_TOKEN', 'Google sign-in failed. Try again.');
+  }
+  if (!payload?.email || !payload.email_verified) {
+    throw new AppError(401, 'INVALID_GOOGLE_TOKEN', 'Your Google email is not verified');
+  }
+  const email = payload.email.toLowerCase();
+  return runAsSystem('auth:google-login', async () => {
+    const candidates = await UserModel.find({ email, status: 'active' });
+    return completeLogin(
+      candidates,
+      libraryId,
+      () =>
+        new AppError(
+          404,
+          'NO_ACCOUNT',
+          'No LibraVerse account uses this Google email. Join a library or ask your library to invite you.',
+        ),
+    );
   });
 }
 

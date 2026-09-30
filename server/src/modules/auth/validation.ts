@@ -26,3 +26,12 @@ export const forgotPasswordBody = z.object({ email });
 export const resetPasswordBody = z.object({ email, code: otpCode, password: passwordSchema });
 export const setupPasswordBody = z.object({ token: z.string().min(20), password: passwordSchema });
 export const twoFactorBody = z.object({ enabled: z.boolean() });
+
+export const googleLoginBody = z.object({
+  credential: z.string().min(20).max(5000),
+  libraryId: z
+    .string()
+    .regex(/^[a-f\d]{24}$/i)
+    .nullable()
+    .optional(),
+});

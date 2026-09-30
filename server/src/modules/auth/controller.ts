@@ -1,5 +1,6 @@
 import type { RequestHandler } from 'express';
 import type { LoginResponse } from '@libraverse/shared';
+import { env } from '../../config/env';
 import * as auth from './service';
 import { REFRESH_COOKIE, clearAuthCookies, setAuthCookies } from './tokens';
 
@@ -59,4 +60,18 @@ export const setupPassword: RequestHandler = async (req, res) => {
 
 export const setTwoFactor: RequestHandler = async (req, res) => {
   res.json({ user: await auth.setTwoFactor(req.auth!.userId, req.body.enabled) });
+};
+
+export const googleLogin: RequestHandler = async (req, res) => {
+  const result = await auth.loginWithGoogle(req.body.credential, req.body.libraryId);
+  if (result.status === 'twoFactorRequired') {
+    res.json(result satisfies LoginResponse);
+    return;
+  }
+  setAuthCookies(res, result.tokens);
+  res.json({ status: 'ok', user: result.user } satisfies LoginResponse);
+};
+
+export const config: RequestHandler = (_req, res) => {
+  res.json({ googleClientId: auth.googleEnabled() ? env.GOOGLE_CLIENT_ID : null });
 };

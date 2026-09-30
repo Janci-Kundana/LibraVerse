@@ -56,6 +56,16 @@ const envSchema = z.object({
     .string()
     .optional()
     .or(z.literal('').transform(() => undefined)),
+  // AI library assistant (FR-25). Optional: without a key the assistant is off.
+  ANTHROPIC_API_KEY: z
+    .string()
+    .optional()
+    .or(z.literal('').transform(() => undefined)),
+  // Google sign-in (FR-04). Optional: the OAuth web client id from Google Cloud.
+  GOOGLE_CLIENT_ID: z
+    .string()
+    .optional()
+    .or(z.literal('').transform(() => undefined)),
   // Web Push (optional). Generate with: npx web-push generate-vapid-keys
   VAPID_PUBLIC_KEY: z
     .string()
