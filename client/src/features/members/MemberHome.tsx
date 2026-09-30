@@ -28,6 +28,11 @@ export function MemberHome() {
     <HomeShell title="Home">
       <Card className="mt-6 max-w-xl">
         <p className="text-sm text-gray-400">Membership number</p>
+        {p.badges.includes('contributor') && (
+          <p className="mb-2 inline-block rounded-full bg-yellow-950 px-2 py-0.5 text-xs text-yellow-300">
+            ★ Contributor
+          </p>
+        )}
         <p className="font-mono text-lg tracking-widest">
           {p.membershipNo?.replace(/(\d{4})(?=\d)/g, '$1 ')}
         </p>

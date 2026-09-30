@@ -13,6 +13,7 @@ import { decodeDataUrl, openFile, putFile } from '../../core/storage';
 import { runWithTenant } from '../../core/tenant';
 import { recordAudit } from '../audit/service';
 import { hashPassword, startSession, toAuthUser } from '../auth/service';
+import { currentLimits } from '../billing/service';
 import { LibraryModel } from '../libraries/model';
 import { MembershipPlanModel } from '../membershipPlans/model';
 import { UserModel } from '../users/model';
@@ -38,6 +39,18 @@ export async function joinLibrary(input: JoinInput) {
   const file = decodeIdProof(input.idProof);
 
   return runWithTenant(library._id, async () => {
+    const limits = await currentLimits();
+    if (
+      limits.memberLimit != null &&
+      (await UserModel.countDocuments({ role: 'member', status: { $ne: 'disabled' } })) >=
+        limits.memberLimit
+    ) {
+      throw new AppError(
+        403,
+        'PLAN_LIMIT',
+        'This library is not accepting new members right now (plan limit reached)',
+      );
+    }
     if (await UserModel.exists({ email: input.email })) {
       throw new AppError(
         409,

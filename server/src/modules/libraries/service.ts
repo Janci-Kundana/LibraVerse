@@ -6,6 +6,13 @@ import { runAsSystem, runWithTenant } from '../../core/tenant';
 import { recordAudit } from '../audit/service';
 import { issuePasswordSetupLink } from '../auth/service';
 import { BranchModel } from '../branches/model';
+import {
+  billingAvailable,
+  createPlatformPayment,
+  onLibraryApproved,
+  onLibraryRejected,
+  proPaymentStatus,
+} from '../billing/service';
 import { PlatformPlanModel } from '../platformPlans/model';
 import { SubscriptionModel } from '../subscriptions/model';
 import { UserModel } from '../users/model';
@@ -41,15 +48,17 @@ function slugify(name: string): string {
 /** FR-01, Free plan path: creates a pending library with its owner, main branch and subscription. */
 export function registerLibrary(input: RegisterLibraryInput) {
   return runAsSystem('library:register', async () => {
-    if (input.planCode !== 'free') {
+    if (input.planCode === 'pro' && !billingAvailable()) {
       throw new AppError(
         400,
         'PLAN_NOT_AVAILABLE',
         'Pro sign-up with payment is not available yet. Start on Free and upgrade later.',
       );
     }
-    const plan = await PlatformPlanModel.findOne({ code: input.planCode, active: true });
-    if (!plan) throw new AppError(400, 'PLAN_NOT_AVAILABLE', 'That plan is not available');
+    const requested = await PlatformPlanModel.findOne({ code: input.planCode, active: true });
+    if (!requested) throw new AppError(400, 'PLAN_NOT_AVAILABLE', 'That plan is not available');
+    // Everyone starts on Free; a Pro payment (confirmed by webhook) upgrades it.
+    const plan = await PlatformPlanModel.findOne({ code: 'free' }).orFail();
 
     const slug = input.slug ?? slugify(input.libraryName);
     if (slug.length < 3) {
@@ -109,7 +118,9 @@ export function registerLibrary(input: RegisterLibraryInput) {
       text: `Hi ${input.ownerName},\n\nThanks for registering ${input.libraryName} on LibraVerse. We will email you a link to set your password as soon as it is approved.`,
     });
 
-    return { id: String(library._id), slug: library.slug, status: library.status };
+    const checkout =
+      input.planCode === 'pro' ? await createPlatformPayment(library._id, 'registration') : null;
+    return { id: String(library._id), slug: library.slug, status: library.status, checkout };
   });
 }
 
@@ -122,6 +133,7 @@ export function listLibraries(filter: { status?: LibraryStatus }): Promise<Admin
     const subs = await SubscriptionModel.find({ libraryId: { $in: libraries.map((l) => l._id) } })
       .select('libraryId platformPlanId')
       .lean();
+    const proPayments = await proPaymentStatus(libraries.map((l) => l._id));
     const plans = await PlatformPlanModel.find().select('code').lean();
     const planCode = new Map(plans.map((p) => [String(p._id), p.code as PlatformPlanCode]));
     const planByLibrary = new Map(
@@ -137,6 +149,7 @@ export function listLibraries(filter: { status?: LibraryStatus }): Promise<Admin
       planCode: planByLibrary.get(String(l._id)) ?? null,
       createdAt: l.createdAt.toISOString(),
       statusReason: l.statusReason ?? null,
+      proPayment: proPayments.get(String(l._id)) ?? null,
     }));
   });
 }
@@ -175,7 +188,9 @@ export function changeLibraryStatus(
       details: { from, to, ...(reason ? { reason } : {}) },
     });
 
-    await afterTransition(library, action, reason);
+    const refunded = action === 'reject' ? await onLibraryRejected(library._id, actor, reason) : 0;
+    if (action === 'approve') await onLibraryApproved(library._id);
+    await afterTransition(library, action, reason, refunded);
     return { id: String(library._id), status: library.status };
   });
 }
@@ -184,12 +199,12 @@ async function afterTransition(
   library: { _id: Types.ObjectId; name: string; ownerName: string; contactEmail: string },
   action: LibraryAction,
   reason?: string,
+  refunded = 0,
 ) {
   const to = library.contactEmail;
   const reasonLine = reason ? `\n\nReason: ${reason}` : '';
 
   if (action === 'approve') {
-    await SubscriptionModel.updateOne({ libraryId: library._id }, { $set: { status: 'active' } });
     const owner = await UserModel.findOne({
       libraryId: library._id,
       role: 'libraryAdmin',
@@ -207,7 +222,11 @@ async function afterTransition(
     await sendMail({
       to,
       subject: `${library.name}'s registration was not approved`,
-      text: `Hi ${library.ownerName},\n\nWe could not approve ${library.name} on LibraVerse.${reasonLine}`,
+      text: `Hi ${library.ownerName},\n\nWe could not approve ${library.name} on LibraVerse.${reasonLine}${
+        refunded
+          ? `\n\nYour Pro payment of ₹${refunded / 100} has been refunded to your original payment method.`
+          : ''
+      }`,
     });
   } else if (action === 'suspend') {
     await sendMail({

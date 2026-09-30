@@ -48,6 +48,9 @@ export function setGatewayFactory(f?: (creds: Credentials) => Gateway) {
   factory = f ?? razorpayGateway;
 }
 
+/** A gateway for explicit credentials (the platform's own account). */
+export const gatewayFromCredentials = (creds: Credentials) => factory(creds);
+
 export async function libraryGateway(libraryId: string): Promise<Gateway> {
   const lib = await LibraryModel.findById(libraryId)
     .select('+razorpayKeySecret razorpayKeyId')

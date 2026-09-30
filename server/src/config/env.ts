@@ -41,6 +41,21 @@ const envSchema = z.object({
     .optional()
     .or(z.literal('').transform(() => undefined)),
   UPLOAD_DIR: z.string().default('uploads'),
+  // The platform's own Razorpay account (test mode) for Pro subscriptions. Optional:
+  // without it, libraries can only use the Free plan.
+  PLATFORM_RAZORPAY_KEY_ID: z
+    .string()
+    .regex(/^rzp_test_/, 'must be a test-mode key (rzp_test_…)')
+    .optional()
+    .or(z.literal('').transform(() => undefined)),
+  PLATFORM_RAZORPAY_KEY_SECRET: z
+    .string()
+    .optional()
+    .or(z.literal('').transform(() => undefined)),
+  PLATFORM_RAZORPAY_WEBHOOK_SECRET: z
+    .string()
+    .optional()
+    .or(z.literal('').transform(() => undefined)),
   // Web Push (optional). Generate with: npx web-push generate-vapid-keys
   VAPID_PUBLIC_KEY: z
     .string()

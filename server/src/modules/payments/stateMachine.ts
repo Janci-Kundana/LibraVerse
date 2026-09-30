@@ -1,6 +1,11 @@
 import type { PaymentStatus } from '@libraverse/shared';
 import { AppError } from '../../core/errors';
+import type { Model } from 'mongoose';
 import { PaymentModel } from './model';
+
+// Any collection with the payment status fields (library payments, platform billing).
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export type PaymentLikeModel = Model<any>;
 
 // The only code that changes a payment's status (rule 2).
 //   created → pending → success | failed | expired
@@ -33,9 +38,11 @@ export async function transitionPayment(
   paymentId: unknown,
   to: PaymentStatus,
   opts: { source: string; note?: string; set?: Record<string, unknown> } = { source: 'system' },
+  // Library payments by default; platform billing passes its own collection.
+  model: PaymentLikeModel = PaymentModel as unknown as PaymentLikeModel,
 ) {
   const now = new Date();
-  const updated = await PaymentModel.findOneAndUpdate(
+  const updated = await model.findOneAndUpdate(
     { _id: paymentId, status: { $in: ALLOWED_FROM[to] } },
     {
       $set: { status: to, ...opts.set },
@@ -45,7 +52,7 @@ export async function transitionPayment(
   );
   if (updated) return { payment: updated, changed: true };
 
-  const current = await PaymentModel.findById(paymentId);
+  const current = await model.findById(paymentId);
   if (!current) throw new AppError(404, 'NOT_FOUND', 'Payment not found');
   if (current.status === to) return { payment: current, changed: false };
   throw new InvalidTransitionError(current.status, to);

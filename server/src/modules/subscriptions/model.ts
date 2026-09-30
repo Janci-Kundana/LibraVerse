@@ -2,7 +2,8 @@ import { Schema, model, type InferSchemaType } from 'mongoose';
 import { SUBSCRIPTION_STATUSES } from '@libraverse/shared';
 import { libraryIdPath, tenantPlugin } from '../../core/tenant';
 
-// A library's platform plan. Billing (Pro, renewals) arrives in Phase 7.
+// A library's platform plan. Pro is paid monthly through the platform's
+// Razorpay account; currentPeriodEnd is when the paid month ends.
 const subscriptionSchema = new Schema(
   {
     libraryId: libraryIdPath,

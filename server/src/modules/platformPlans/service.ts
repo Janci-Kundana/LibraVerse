@@ -16,8 +16,12 @@ export async function ensureDefaultPlans() {
   );
 }
 
-export async function listActivePlans(): Promise<PlatformPlanDto[]> {
-  const plans = await PlatformPlanModel.find({ active: true }).sort({ monthlyPrice: 1 }).lean();
+export async function listActivePlans(
+  opts: { includeInactive?: boolean } = {},
+): Promise<PlatformPlanDto[]> {
+  const plans = await PlatformPlanModel.find(opts.includeInactive ? {} : { active: true })
+    .sort({ monthlyPrice: 1 })
+    .lean();
   return plans.map((p) => ({
     id: String(p._id),
     code: p.code,
@@ -25,5 +29,6 @@ export async function listActivePlans(): Promise<PlatformPlanDto[]> {
     monthlyPrice: p.monthlyPrice,
     memberLimit: p.memberLimit ?? null,
     branchLimit: p.branchLimit ?? null,
+    active: p.active,
   }));
 }

@@ -11,6 +11,9 @@ import { BranchModel } from '../src/modules/branches/model';
 import { BookCopyModel } from '../src/modules/copies/model';
 import { ReviewModel } from '../src/modules/reviews/model';
 import { CouponModel } from '../src/modules/coupons/model';
+import { DonationModel } from '../src/modules/donations/model';
+import { EventModel } from '../src/modules/events/model';
+import { NotificationModel } from '../src/modules/notifications/model';
 import { LoanModel } from '../src/modules/loans/model';
 import { PaymentModel } from '../src/modules/payments/model';
 import { PushSubscriptionModel } from '../src/modules/push/model';
@@ -136,6 +139,26 @@ const TENANT_MODELS: TenantCase[] = [
     update: { endpoint: 'https://push.example/changed' },
   },
   {
+    model: DonationModel,
+    data: (tag) => ({
+      donorName: tag,
+      donorEmail: `${tag}@x.test`,
+      title: `Gift ${tag}`,
+      condition: 'good',
+    }),
+    update: { status: 'declined' },
+  },
+  {
+    model: NotificationModel,
+    data: (tag) => ({ userId: new Types.ObjectId(), type: 't', title: tag, message: 'm' }),
+    update: { read: true },
+  },
+  {
+    model: EventModel,
+    data: (tag) => ({ title: `Event ${tag}`, createdBy: new Types.ObjectId() }),
+    update: { title: 'changed' },
+  },
+  {
     model: AuditLogModel,
     data: (tag) => ({
       seq: tag.length,
@@ -149,7 +172,7 @@ const TENANT_MODELS: TenantCase[] = [
 ];
 
 // Collections that belong to the platform, not to one library.
-const PLATFORM_MODELS = ['Library', 'PlatformPlan', 'Session', 'WebhookEvent'];
+const PLATFORM_MODELS = ['Library', 'PlatformPlan', 'Session', 'WebhookEvent', 'PlatformPayment'];
 
 describe.each(TENANT_MODELS.map((c) => [c.model.modelName, c] as const))(
   'tenant isolation: %s',

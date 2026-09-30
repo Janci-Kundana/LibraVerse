@@ -19,7 +19,6 @@ describe('RegisterLibraryPage', () => {
     });
     renderRoute(routes, '/register-library');
     expect(await screen.findByText('₹999/month')).toBeInTheDocument();
-    expect(screen.getByText('Upgrade after approval')).toBeInTheDocument();
 
     fireEvent.change(screen.getByLabelText('Library name'), { target: { value: 'City Library' } });
     fireEvent.change(screen.getByLabelText('Your name'), { target: { value: 'Asha Rao' } });

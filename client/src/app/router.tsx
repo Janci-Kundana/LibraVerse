@@ -1,6 +1,9 @@
 import type { ReactNode } from 'react';
 import { createBrowserRouter, type RouteObject } from 'react-router';
 import { AdminLibrariesPage } from '../features/admin/AdminLibrariesPage';
+import { AdminPlansPage, SubscriptionPage } from '../features/billing/BillingPages';
+import { DonatePage, DonationsPage } from '../features/donations/DonationPages';
+import { MemberEventsPage, StaffEventsPage } from '../features/events/EventPages';
 import { CounterPage } from '../features/circulation/CounterPage';
 import { MyPaymentsPage } from '../features/payments/MemberPayments';
 import {
@@ -57,6 +60,7 @@ export const routes: RouteObject[] = [
   { path: '/register-library', element: <RegisterLibraryPage /> },
   { path: '/join', element: <JoinPage /> },
   { path: '/pay/:token', element: <PublicPayPage /> },
+  { path: '/donate', element: <DonatePage /> },
   {
     path: '/admin',
     element: (
@@ -66,6 +70,7 @@ export const routes: RouteObject[] = [
     ),
     children: [
       { index: true, element: <AdminLibrariesPage /> },
+      { path: 'plans', element: <AdminPlansPage /> },
       { path: 'security', element: <SecurityPage /> },
     ],
   },
@@ -81,6 +86,9 @@ export const routes: RouteObject[] = [
       { path: 'counter', element: <CounterPage /> },
       { path: 'loans', element: <LoansPage /> },
       { path: 'payments', element: <PaymentsPage /> },
+      { path: 'donations', element: <DonationsPage /> },
+      { path: 'events', element: <StaffEventsPage /> },
+      { path: 'subscription', element: adminOnly(<SubscriptionPage />) },
       { path: 'payment-settings', element: adminOnly(<PaymentSettingsPage />) },
       { path: 'reservations', element: <ReservationsPage /> },
       { path: 'verifications', element: <VerificationsPage /> },
@@ -107,6 +115,7 @@ export const routes: RouteObject[] = [
       { path: 'card', element: verified(<CardPage />) },
       { path: 'loans', element: verified(<MyLoansPage />) },
       { path: 'payments', element: verified(<MyPaymentsPage />) },
+      { path: 'events', element: verified(<MemberEventsPage />) },
       { path: 'catalog', element: verified(<MemberCatalogPage />) },
       { path: 'books/:id', element: verified(<MemberBookPage />) },
       { path: 'wishlist', element: verified(<WishlistPage />) },

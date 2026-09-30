@@ -2,13 +2,24 @@ import express, { Router } from 'express';
 import { validateBody } from '../../core/validate';
 import { authenticate, requireRole } from '../auth/middleware';
 import { requireVerifiedMember } from '../members/middleware';
+import { handlePlatformWebhook } from '../billing/service';
 import * as c from './controller';
 import { paymentSettingsBody } from './settings';
 import { chargeBody, counterBody, refundBody } from './validation';
 
 /** Mounted before the JSON parser: the signature covers the exact raw bytes. */
 export const webhookRoutes = Router();
-webhookRoutes.post('/razorpay/:libraryId', express.raw({ type: '*/*', limit: '1mb' }), c.webhook);
+const raw = express.raw({ type: '*/*', limit: '1mb' });
+// Platform billing first: "platform" would otherwise match :libraryId.
+webhookRoutes.post('/razorpay/platform', raw, async (req, res) => {
+  const result = await handlePlatformWebhook(
+    req.body as Buffer,
+    req.header('x-razorpay-signature'),
+    req.header('x-razorpay-event-id'),
+  );
+  res.json({ ok: true, result });
+});
+webhookRoutes.post('/razorpay/:libraryId', raw, c.webhook);
 
 export const paymentSettingsRoutes = Router();
 paymentSettingsRoutes.use(authenticate, requireRole('libraryAdmin'));

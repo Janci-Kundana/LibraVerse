@@ -30,6 +30,12 @@ export function LandingPage() {
           >
             Join a library
           </Link>
+          <Link
+            to="/donate"
+            className="rounded-lg px-5 py-2.5 font-medium text-gray-400 hover:text-gray-100"
+          >
+            Donate a book
+          </Link>
         </div>
         <ApiStatus />
       </section>

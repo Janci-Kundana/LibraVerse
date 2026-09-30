@@ -1,7 +1,8 @@
 import { useState, type FormEvent } from 'react';
 import { Link } from 'react-router';
 import { useQuery } from '@tanstack/react-query';
-import type { PlatformPlanDto } from '@libraverse/shared';
+import type { PlatformPlanCode, PlatformPlanDto } from '@libraverse/shared';
+import { payPlatform, type PlatformCheckout } from '../billing/BillingPages';
 import { AuthCard, Button, ErrorText, Field } from '../../components/ui';
 import { api, errorMessage, post } from '../../lib/api';
 
@@ -18,6 +19,7 @@ export function RegisterLibraryPage() {
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
   const [done, setDone] = useState(false);
+  const [planCode, setPlanCode] = useState<PlatformPlanCode>('free');
 
   const set = (key: keyof typeof form) => (e: { target: { value: string } }) =>
     setForm((f) => ({ ...f, [key]: e.target.value }));
@@ -27,8 +29,12 @@ export function RegisterLibraryPage() {
     setError('');
     setBusy(true);
     try {
-      await post('/api/libraries/register', { ...form, planCode: 'free' });
+      const res = await post<{ checkout: PlatformCheckout | null }>('/api/libraries/register', {
+        ...form,
+        planCode,
+      });
       setDone(true);
+      if (res.checkout) await payPlatform(res.checkout).catch(() => {});
     } catch (err) {
       setError(errorMessage(err));
     } finally {
@@ -89,19 +95,18 @@ export function RegisterLibraryPage() {
           <legend className="text-sm text-gray-300">Plan</legend>
           <div className="mt-2 grid gap-2 sm:grid-cols-2">
             {(plans.data ?? []).map((p) => {
-              const available = p.code === 'free';
+              const chosen = planCode === p.code;
               return (
                 <label
                   key={p.id}
-                  className={`rounded-lg border px-3 py-2 text-sm ${available ? 'border-brand-500' : 'border-gray-800 opacity-60'}`}
+                  className={`cursor-pointer rounded-lg border px-3 py-2 text-sm ${chosen ? 'border-brand-500' : 'border-gray-800'}`}
                 >
                   <input
                     type="radio"
                     name="plan"
                     className="sr-only"
-                    checked={available}
-                    disabled={!available}
-                    readOnly
+                    checked={chosen}
+                    onChange={() => setPlanCode(p.code)}
                   />
                   <span className="block font-medium">{p.name}</span>
                   <span className="text-gray-400">{rupees(p.monthlyPrice)}</span>
@@ -109,8 +114,10 @@ export function RegisterLibraryPage() {
                     {p.memberLimit ? `Up to ${p.memberLimit} members` : 'Unlimited members'} ·{' '}
                     {p.branchLimit === 1 ? '1 branch' : `${p.branchLimit ?? 'Unlimited'} branches`}
                   </span>
-                  {!available && (
-                    <span className="block text-xs text-gray-500">Upgrade after approval</span>
+                  {p.code === 'pro' && (
+                    <span className="block text-xs text-gray-500">
+                      Pay now; refunded if we do not approve your library
+                    </span>
                   )}
                 </label>
               );

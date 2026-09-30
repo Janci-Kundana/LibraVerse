@@ -2,6 +2,7 @@ import type { ReactNode } from 'react';
 import { NavLink, Outlet, useNavigate } from 'react-router';
 import { isStaff, type Role } from '@libraverse/shared';
 import { useLogout, useMe } from '../auth/useAuth';
+import { NotificationBell } from './NotificationBell';
 
 interface NavItem {
   to: string;
@@ -12,6 +13,7 @@ interface NavItem {
 const NAV: Record<Role, NavItem[]> = {
   superAdmin: [
     { to: '/admin', label: 'Libraries' },
+    { to: '/admin/plans', label: 'Plans' },
     { to: '/admin/security', label: 'Security' },
   ],
   libraryAdmin: [
@@ -22,11 +24,14 @@ const NAV: Record<Role, NavItem[]> = {
     { to: '/library/reservations', label: 'Reservations' },
     { to: '/library/verifications', label: 'ID verification' },
     { to: '/library/catalog', label: 'Catalog' },
+    { to: '/library/donations', label: 'Donations' },
+    { to: '/library/events', label: 'Events & notices' },
     { to: '/library/plans', label: 'Plans & coupons' },
     { to: '/library/branches', label: 'Branches' },
     { to: '/library/staff', label: 'Staff' },
     { to: '/library/settings', label: 'Settings' },
     { to: '/library/payment-settings', label: 'Online payments' },
+    { to: '/library/subscription', label: 'Subscription' },
     { to: '/library/security', label: 'Security' },
   ],
   librarian: [
@@ -36,6 +41,8 @@ const NAV: Record<Role, NavItem[]> = {
     { to: '/library/reservations', label: 'Reservations' },
     { to: '/library/verifications', label: 'ID verification' },
     { to: '/library/catalog', label: 'Catalog' },
+    { to: '/library/donations', label: 'Donations' },
+    { to: '/library/events', label: 'Events & notices' },
     { to: '/library/security', label: 'Security' },
   ],
   member: [
@@ -43,6 +50,7 @@ const NAV: Record<Role, NavItem[]> = {
     { to: '/member/card', label: 'My card' },
     { to: '/member/loans', label: 'My books' },
     { to: '/member/payments', label: 'Payments' },
+    { to: '/member/events', label: 'Notice board' },
     { to: '/member/catalog', label: 'Catalog' },
     { to: '/member/wishlist', label: 'Wishlist' },
   ],
@@ -92,9 +100,12 @@ export function DashboardLayout() {
           <p className="min-w-0 truncate text-sm text-gray-300">
             {user.name} · <span className="text-gray-500">{ROLE_TITLES[user.role]}</span>
           </p>
-          <button onClick={signOut} className="text-sm text-gray-400 hover:text-gray-100">
-            Sign out
-          </button>
+          <div className="flex items-center gap-3">
+            {user.libraryId && <NotificationBell />}
+            <button onClick={signOut} className="text-sm text-gray-400 hover:text-gray-100">
+              Sign out
+            </button>
+          </div>
         </header>
         <main className="px-4 py-6 md:px-8">
           <Outlet />

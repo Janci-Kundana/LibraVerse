@@ -5,7 +5,6 @@ import { runAsSystem, runWithTenant } from '../src/core/tenant';
 import { AuditLogModel } from '../src/modules/audit/model';
 import { verifyAuditChain } from '../src/modules/audit/service';
 import { BranchModel } from '../src/modules/branches/model';
-import { LibraryModel } from '../src/modules/libraries/model';
 import { ensureDefaultPlans } from '../src/modules/platformPlans/service';
 import { SubscriptionModel } from '../src/modules/subscriptions/model';
 import { UserModel } from '../src/modules/users/model';
@@ -63,13 +62,6 @@ describe('POST /api/libraries/register (FR-01, Free plan)', () => {
       expect(audit.map((a) => a.action)).toEqual(['library.registered']);
     });
     expect(testOutbox.map((m) => m.to)).toEqual(['asha@riverside.test']);
-  });
-
-  it('refuses Pro until payments exist', async () => {
-    const res = await register({ ...registration, planCode: 'pro' });
-    expect(res.status).toBe(400);
-    expect(res.body.error.code).toBe('PLAN_NOT_AVAILABLE');
-    expect(await runAsSystem('test', () => LibraryModel.countDocuments())).toBe(0);
   });
 
   it('rejects a taken web address', async () => {
@@ -206,6 +198,7 @@ describe('Super Admin library workflow (FR-05)', () => {
         'name',
         'ownerName',
         'planCode',
+        'proPayment',
         'slug',
         'status',
         'statusReason',

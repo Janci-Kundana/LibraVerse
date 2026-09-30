@@ -41,6 +41,9 @@ Status: **approved 2026-09-29**. Each phase ends with green tests, run instructi
 - Jest runs with `maxWorkers: 4`: every suite shares one in-memory mongod.
 - The 3D card's faces are drawn on 2D canvases (tier finishes, chip, monogram, embossed number, QR) and reused as Three.js textures and as the two PDF pages (jsPDF). Lighting uses local Lightformers, so no HDR is downloaded. The member photo on the card back is omitted: members upload an ID proof, not a portrait.
 - PWA: vite-plugin-pwa generateSW with an offline app shell; `/api` and `/socket.io` are never cached. Push handlers live in `public/push-sw.js` (imported into the worker). Web Push is optional (VAPID env vars) and is one more `notify()` channel.
+- Platform billing uses the platform's own Razorpay account (`PLATFORM_RAZORPAY_*`, optional). Every library starts on Free; a verified Pro payment (webhook `/api/webhooks/razorpay/platform`) switches the subscription to Pro for 30 days (starting at approval for a pending library). `platformPayments` is platform-owned data keyed by `billedLibraryId`, and its status goes through the same `transitionPayment()`. Rejecting a paid library refunds it (TC-10). A lapsed Pro month drops to Free by cron; downgrading is refused while over Free's limits.
+- Donations: offered → accepted | declined; accepted → catalogued (book created with `donatedBy`, or "Anonymous"); a member donor gets the `contributor` badge (TC-11).
+- In-app notifications are a third `notify()` channel (with email and push), stored per user and pushed live as `notification:new`.
 - Mongoose is pinned to **v8** (MongoDB driver 6). With Mongoose 9 / driver 7, the connection handshake fails inside Jest's VM sandbox ("Missing required sub-document 'driver' in the client metadata document"), although it works in plain Node. Revisit when upgrading.
 
 ## Progress
@@ -52,3 +55,4 @@ Status: **approved 2026-09-29**. Each phase ends with green tests, run instructi
 - [x] Phase 4: Circulation (2026-09-30)
 - [x] Phase 5: Payments and live updates (2026-09-30)
 - [x] Phase 6: 3D card and PWA (2026-09-30)
+- [x] Phase 7: SaaS billing, donations, notifications, events (2026-09-30)

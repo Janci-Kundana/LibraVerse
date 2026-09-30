@@ -83,6 +83,9 @@ describe('LoginPage', () => {
     fireEvent.change(await screen.findByLabelText('Sign-in code'), { target: { value: '123456' } });
     fireEvent.click(screen.getByRole('button', { name: 'Verify' }));
     expect(await screen.findByRole('heading', { name: 'Library dashboard' })).toBeInTheDocument();
-    expect(calls.at(-1)?.body).toEqual({ challengeToken: 'ch1', code: '123456' });
+    expect(calls.find((c) => c.path === '/api/auth/login/otp')?.body).toEqual({
+      challengeToken: 'ch1',
+      code: '123456',
+    });
   });
 });

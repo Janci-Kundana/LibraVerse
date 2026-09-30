@@ -12,7 +12,12 @@ import { adminLibraryRoutes, libraryRoutes } from './modules/libraries/routes';
 import { platformPlanRoutes } from './modules/platformPlans/routes';
 import { pushRoutes } from './modules/push/routes';
 import { registerPushChannel } from './modules/push/service';
+import { adminPlanRoutes, subscriptionRoutes } from './modules/billing/routes';
 import { bookRoutes, copyRoutes } from './modules/books/routes';
+import { donationRoutes, publicDonationRoutes } from './modules/donations/routes';
+import { eventRoutes, memberEventRoutes } from './modules/events/routes';
+import { notificationRoutes } from './modules/notifications/routes';
+import { registerInAppChannel } from './modules/notifications/service';
 import { catalogRoutes } from './modules/catalog/routes';
 import { circulationRoutes, memberCirculationRoutes } from './modules/circulation/routes';
 import { couponRoutes } from './modules/coupons/routes';
@@ -36,6 +41,7 @@ const isUpload = (path: string) => UPLOAD_PATHS.includes(path) || path.startsWit
 export function createApp() {
   const app = express();
   registerPushChannel();
+  registerInAppChannel();
 
   app.disable('x-powered-by');
   app.use(helmet());
@@ -77,6 +83,13 @@ export function createApp() {
   app.use('/api/member/payments', memberPaymentRoutes);
   app.use('/api/pay', publicPayRoutes);
   app.use('/api/push', pushRoutes);
+  app.use('/api/library/subscription', subscriptionRoutes);
+  app.use('/api/admin/plans', adminPlanRoutes);
+  app.use('/api/public/libraries', publicDonationRoutes);
+  app.use('/api/donations', donationRoutes);
+  app.use('/api/notifications', notificationRoutes);
+  app.use('/api/events', eventRoutes);
+  app.use('/api/member/events', memberEventRoutes);
   app.use('/api/member', memberCirculationRoutes);
   app.use('/api/member', memberRoutes);
   app.use('/api/verifications', verificationRoutes);

@@ -77,6 +77,10 @@ export function emitPaymentUpdated(libraryId: string, event: PaymentUpdatedEvent
   );
 }
 
+export function emitToUser(userId: string, event: string, payload: unknown) {
+  io?.to(`user:${userId}`).emit(event, payload);
+}
+
 export function closeRealtime() {
   void io?.close();
   io = null;

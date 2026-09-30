@@ -48,6 +48,7 @@ export interface PlatformPlanDto {
   monthlyPrice: number;
   memberLimit: number | null;
   branchLimit: number | null;
+  active: boolean;
 }
 
 export interface AdminLibraryDto {
@@ -60,6 +61,8 @@ export interface AdminLibraryDto {
   planCode: PlatformPlanCode | null;
   createdAt: string;
   statusReason: string | null;
+  /** Pro payment made to the platform, if any */
+  proPayment: 'paid' | 'refunded' | null;
 }
 
 export interface BranchDto {
