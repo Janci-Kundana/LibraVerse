@@ -16,7 +16,12 @@ export function useCardFaces(card: MemberCardDto | undefined) {
     let photoUrl: string | null = null;
     void (async () => {
       if (card.hasPhoto) {
-        const res = await fetch('/api/member/photo', { credentials: 'include' }).catch(() => null);
+        // same-origin, not include: the API redirects to Cloudinary, which allows any
+        // origin (*), and browsers refuse "*" for a request that carries cookies.
+        const res = await fetch('/api/member/photo', {
+          credentials: 'same-origin',
+          cache: 'no-store',
+        }).catch(() => null);
         if (res?.ok) photoUrl = URL.createObjectURL(await res.blob());
       }
       const f = await renderFaces(card, photoUrl);

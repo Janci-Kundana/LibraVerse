@@ -217,7 +217,11 @@ export function VerificationPending({ profile }: { profile: MemberProfileDto }) 
   const resubmit = useMutation({
     mutationFn: async () =>
       post<MemberProfileDto>('/api/member/id-proof', { idProof: await readFileAsDataUrl(file!) }),
-    onSuccess: (p) => qc.setQueryData(PROFILE_KEY, p),
+    onSuccess: (p) => {
+      qc.setQueryData(PROFILE_KEY, p);
+      // Redraw the card (on Home and My card) with the new photo.
+      void qc.invalidateQueries({ queryKey: ['member', 'card'] });
+    },
   });
   const rejected = profile.verificationStatus === 'rejected';
 
