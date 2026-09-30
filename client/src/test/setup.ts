@@ -1,5 +1,5 @@
+import { cleanup, configure } from '@testing-library/react';
 import '@testing-library/jest-dom/vitest';
-import { cleanup } from '@testing-library/react';
 import { afterEach, vi } from 'vitest';
 
 afterEach(() => {
@@ -31,3 +31,7 @@ class TestIntersectionObserver {
 }
 globalThis.IntersectionObserver ??=
   TestIntersectionObserver as unknown as typeof IntersectionObserver;
+
+// findBy* waits up to 5 s: the client and server suites run in parallel, and a
+// file's first render (loading the page modules) can pass 1 s under that load.
+configure({ asyncUtilTimeout: 5000 });

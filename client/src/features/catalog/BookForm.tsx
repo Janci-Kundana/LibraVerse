@@ -158,7 +158,7 @@ export function BookForm({
             value={f.description}
             onChange={set('description')}
             rows={3}
-            className="mt-1 block w-full rounded-lg border border-gray-700 bg-gray-950 px-3 py-2"
+            className="mt-1 block w-full rounded-xl border border-white/10 bg-white/[0.035] px-3.5 py-2.5 outline-none transition focus:border-brand-400/70 focus:ring-4 focus:ring-brand-500/15"
           />
         </label>
         {!initial && (

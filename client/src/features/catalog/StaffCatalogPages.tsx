@@ -44,11 +44,11 @@ export function StaffCatalogPage() {
 
   return (
     <div className="max-w-5xl">
-      <PageHeader title="Catalog">
+      <PageHeader title="Catalog" icon="library">
         <div className="flex gap-2">
           <Link
             to="/library/catalog/import"
-            className="rounded-lg border border-gray-700 px-4 py-2 text-sm hover:bg-gray-800"
+            className="inline-flex items-center gap-2 rounded-xl border border-white/12 bg-white/[0.04] px-4 py-2.5 text-sm font-semibold transition hover:border-white/25 hover:bg-white/[0.08]"
           >
             Import CSV
           </Link>
@@ -70,7 +70,7 @@ export function StaffCatalogPage() {
         }}
       />
       <p className="mt-3 text-sm text-gray-500">{books.data?.total ?? 0} titles</p>
-      <ul className="mt-2 divide-y divide-gray-800">
+      <ul className="mt-2 divide-y divide-white/[0.06]">
         {books.data?.items.map((b) => (
           <li key={b.id}>
             <Link
@@ -122,7 +122,7 @@ export function NewBookPage() {
   if (!branches.data) return <PageSkeleton />;
   return (
     <div className="max-w-4xl">
-      <PageHeader title="Add a book" />
+      <PageHeader title="Add a book" icon="book" />
       <Card>
         <BookForm
           branches={branches.data}
@@ -198,7 +198,7 @@ export function StaffBookPage() {
             href={`/api/books/stickers.pdf?bookId=${b.id}`}
             target="_blank"
             rel="noreferrer"
-            className="rounded-lg border border-gray-700 px-4 py-2 text-sm hover:bg-gray-800"
+            className="inline-flex items-center gap-2 rounded-xl border border-white/12 bg-white/[0.04] px-4 py-2.5 text-sm font-semibold transition hover:border-white/25 hover:bg-white/[0.08]"
           >
             Print QR stickers
           </a>
@@ -241,7 +241,7 @@ export function StaffBookPage() {
         Copies ({b.copies.available} of {b.copies.total} on shelf)
       </h2>
       <ErrorText>{updateCopy.error ? errorMessage(updateCopy.error) : ''}</ErrorText>
-      <ul className="mt-3 divide-y divide-gray-800 rounded-lg border border-gray-800">
+      <ul className="mt-3 divide-y divide-white/[0.06] rounded-lg border border-gray-800">
         {b.copyList.map((c) => (
           <li key={c.id} className="flex flex-wrap items-center gap-3 px-4 py-3 text-sm">
             <a
@@ -262,7 +262,7 @@ export function StaffBookPage() {
                 aria-label={`Status of ${c.qrCode}`}
                 value={c.status}
                 onChange={(e) => updateCopy.mutate({ copy: c, status: e.target.value })}
-                className="ml-auto rounded border border-gray-700 bg-gray-950 px-2 py-1"
+                className="ml-auto rounded border border-white/10 bg-white/[0.035] px-2 py-1"
               >
                 <option value="available">available</option>
                 <option value="damaged">damaged</option>
@@ -329,7 +329,7 @@ export function ImportBooksPage() {
   });
   return (
     <div className="max-w-3xl">
-      <PageHeader title="Import books from CSV" />
+      <PageHeader title="Import books from CSV" icon="scroll" />
       <p className="text-sm text-gray-400">
         Columns: <code>title</code> (required), <code>authors</code> (separate with ;),{' '}
         <code>isbn</code>, <code>category</code>, <code>language</code>, <code>publishedYear</code>,{' '}
@@ -350,7 +350,7 @@ export function ImportBooksPage() {
           onChange={(e) => setCsv(e.target.value)}
           rows={10}
           placeholder={SAMPLE}
-          className="mt-1 block w-full rounded-lg border border-gray-700 bg-gray-950 px-3 py-2 font-mono text-xs"
+          className="mt-1 block w-full rounded-xl border border-white/10 bg-white/[0.035] px-3.5 py-2.5 outline-none transition focus:border-brand-400/70 focus:ring-4 focus:ring-brand-500/15 font-mono text-xs"
         />
       </label>
       <Button

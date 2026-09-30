@@ -44,7 +44,7 @@ export function StaffPage() {
 
   return (
     <div className="max-w-3xl">
-      <PageHeader title="Staff" />
+      <PageHeader title="Staff" icon="userCog" />
       <ul className="space-y-2">
         {staff.data?.map((s) => (
           <li

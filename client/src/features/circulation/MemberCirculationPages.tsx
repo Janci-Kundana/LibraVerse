@@ -27,7 +27,7 @@ export function MyLoansPage() {
 
   return (
     <div className="max-w-3xl">
-      <PageHeader title="My books" />
+      <PageHeader title="My books" icon="book" />
       {d.pendingDues > 0 && (
         <p
           role="alert"
@@ -90,7 +90,7 @@ export function MyLoansPage() {
 
       <h2 className="mt-8 text-lg font-semibold">History</h2>
       {d.history.length === 0 && <p className="text-sm text-gray-400">No returned books yet.</p>}
-      <ul className="mt-2 divide-y divide-gray-800">
+      <ul className="mt-2 divide-y divide-white/[0.06]">
         {d.history.map((l) => (
           <li key={l.id} className="py-2">
             <LoanSummary loan={l} />

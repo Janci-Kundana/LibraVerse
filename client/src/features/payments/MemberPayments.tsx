@@ -166,7 +166,7 @@ export function MyPaymentsPage() {
   });
   return (
     <div className="max-w-3xl">
-      <PageHeader title="Payments" />
+      <PageHeader title="Payments" icon="wallet" />
       {list.data?.length === 0 && <p className="text-gray-400">No payments yet.</p>}
       <ul className="space-y-2">
         {list.data?.map((p) => (

@@ -64,7 +64,7 @@ export function AdminLibrariesPage() {
             role="tab"
             aria-selected={s === status}
             onClick={() => setStatus(s)}
-            className={`rounded-full px-3 py-1 text-sm capitalize ${s === status ? 'bg-brand-500 text-white' : 'border border-gray-700 text-gray-300'}`}
+            className={`rounded-full px-3 py-1 text-sm capitalize ${s === status ? 'bg-gradient-to-r from-brand-500 to-brand-600 text-white shadow-[0_6px_20px_-8px_rgb(226_41_74/0.9)]' : 'border border-white/10 text-gray-300 hover:border-white/25 hover:text-white'}`}
           >
             {s}
           </button>
@@ -88,7 +88,7 @@ export function AdminLibrariesPage() {
       ) : (
         <ul className="mt-4 space-y-3">
           {libraries.data?.map((lib) => (
-            <li key={lib.id} className="rounded-xl border border-gray-800 bg-gray-900 p-4">
+            <li key={lib.id} className="glass rounded-2xl p-4">
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div className="min-w-0">
                   <p className="font-medium">
@@ -141,7 +141,7 @@ export function AdminLibrariesPage() {
                       onChange={(e) => setReason(e.target.value)}
                       maxLength={500}
                       rows={2}
-                      className="mt-1 block w-full rounded-lg border border-gray-700 bg-gray-950 px-3 py-2 text-gray-100"
+                      className="mt-1 block w-full rounded-xl border border-white/10 bg-white/[0.035] px-3.5 py-2.5 outline-none transition focus:border-brand-400/70 focus:ring-4 focus:ring-brand-500/15 text-gray-100"
                     />
                   </label>
                   <div className="flex gap-2">

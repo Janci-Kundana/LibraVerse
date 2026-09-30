@@ -56,10 +56,7 @@ export function LibraryHome() {
 
 function QuickLink({ to, label, hint }: { to: string; label: string; hint: string }) {
   return (
-    <Link
-      to={to}
-      className="rounded-xl border border-gray-800 bg-gray-900 p-4 hover:border-brand-500"
-    >
+    <Link to={to} className="glass rounded-2xl p-4 hover:border-brand-500">
       <p className="font-medium">{label}</p>
       <p className="text-sm text-gray-400">{hint}</p>
     </Link>
@@ -222,7 +219,7 @@ export function AuditLogPage() {
   const pages = log.data ? Math.max(1, Math.ceil(log.data.total / log.data.pageSize)) : 1;
   return (
     <div className="max-w-5xl">
-      <PageHeader title="Audit log">
+      <PageHeader title="Audit log" icon="scroll">
         {verify.data && (
           <StatusPill tone={verify.data.intact ? 'green' : 'red'}>
             {verify.data.intact ? 'chain intact' : `tampered at #${verify.data.brokenAtSeq}`}
@@ -253,7 +250,7 @@ export function AuditLogPage() {
               <th>Details</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-gray-800">
+          <tbody className="divide-y divide-white/[0.06]">
             {log.data?.items.map((e) => (
               <tr key={e.seq} className="align-top">
                 <td className="py-2 pr-3 text-gray-500">{e.seq}</td>
@@ -306,7 +303,7 @@ export function PlatformAnalyticsPage() {
   const s = d.data.librariesByStatus;
   return (
     <div className="max-w-5xl">
-      <PageHeader title="Platform analytics" />
+      <PageHeader title="Platform analytics" icon="chart" />
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         <StatTile label="Active libraries" icon="library" value={String(s.active ?? 0)} />
         <StatTile

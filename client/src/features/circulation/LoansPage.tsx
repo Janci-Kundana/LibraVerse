@@ -25,7 +25,7 @@ export function LoansPage() {
 
   return (
     <div className="max-w-4xl">
-      <PageHeader title="Loans" />
+      <PageHeader title="Loans" icon="repeat" />
       <div role="tablist" className="mb-4 flex flex-wrap gap-2">
         {TABS.map((t) => (
           <button
@@ -33,7 +33,7 @@ export function LoansPage() {
             role="tab"
             aria-selected={t === status}
             onClick={() => setStatus(t)}
-            className={`rounded-full px-3 py-1 text-sm capitalize ${t === status ? 'bg-brand-500 text-white' : 'border border-gray-700 text-gray-300'}`}
+            className={`rounded-full px-3 py-1 text-sm capitalize ${t === status ? 'bg-gradient-to-r from-brand-500 to-brand-600 text-white shadow-[0_6px_20px_-8px_rgb(226_41_74/0.9)]' : 'border border-white/10 text-gray-300 hover:border-white/25 hover:text-white'}`}
           >
             {t}
           </button>
@@ -49,7 +49,7 @@ export function LoansPage() {
         <ErrorText>{act.error ? errorMessage(act.error) : ''}</ErrorText>
       </div>
       {loans.data?.length === 0 && <p className="mt-4 text-gray-400">No {status} loans.</p>}
-      <ul className="mt-3 divide-y divide-gray-800">
+      <ul className="mt-3 divide-y divide-white/[0.06]">
         {loans.data?.map((l) => (
           <li key={l.id} className="flex flex-wrap items-center justify-between gap-3 py-3">
             <LoanSummary loan={l} showMember />
@@ -83,7 +83,7 @@ export function ReservationsPage() {
   });
   return (
     <div className="max-w-4xl">
-      <PageHeader title="Reservations" />
+      <PageHeader title="Reservations" icon="bookmark" />
       <div role="tablist" className="mb-4 flex flex-wrap gap-2">
         {RES_TABS.map((t) => (
           <button
@@ -91,14 +91,14 @@ export function ReservationsPage() {
             role="tab"
             aria-selected={t === status}
             onClick={() => setStatus(t)}
-            className={`rounded-full px-3 py-1 text-sm capitalize ${t === status ? 'bg-brand-500 text-white' : 'border border-gray-700 text-gray-300'}`}
+            className={`rounded-full px-3 py-1 text-sm capitalize ${t === status ? 'bg-gradient-to-r from-brand-500 to-brand-600 text-white shadow-[0_6px_20px_-8px_rgb(226_41_74/0.9)]' : 'border border-white/10 text-gray-300 hover:border-white/25 hover:text-white'}`}
           >
             {t}
           </button>
         ))}
       </div>
       {list.data?.length === 0 && <p className="text-gray-400">No {status} reservations.</p>}
-      <ul className="divide-y divide-gray-800">
+      <ul className="divide-y divide-white/[0.06]">
         {list.data?.map((r) => (
           <li key={r.id} className="py-3">
             <p className="font-medium">{r.bookTitle}</p>

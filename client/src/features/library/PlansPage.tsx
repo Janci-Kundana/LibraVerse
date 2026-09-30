@@ -89,7 +89,7 @@ export function PlansPage() {
 
   return (
     <div className="max-w-4xl">
-      <PageHeader title="Membership plans" />
+      <PageHeader title="Membership plans" icon="tag" />
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
         {plans.data?.map((p) => (
           <Card key={p.id}>

@@ -209,7 +209,7 @@ export function PaymentsPage() {
 
   return (
     <div className="max-w-5xl">
-      <PageHeader title="Payments">
+      <PageHeader title="Payments" icon="wallet">
         <SelectField label="Status" value={status} onChange={(e) => setStatus(e.target.value)}>
           <option value="">All</option>
           {Object.keys(TONE).map((s) => (
@@ -218,7 +218,7 @@ export function PaymentsPage() {
         </SelectField>
       </PageHeader>
       <p className="mb-3 text-sm text-gray-400">Net collected in this list: {rupees(collected)}</p>
-      <ul className="divide-y divide-gray-800">
+      <ul className="divide-y divide-white/[0.06]">
         {list.data?.map((p) => (
           <li key={p.id} className="flex flex-wrap items-center justify-between gap-3 py-3">
             <div className="min-w-0">
@@ -315,7 +315,7 @@ export function PaymentSettingsPage() {
   if (!s) return <PageSkeleton />;
   return (
     <div className="max-w-2xl">
-      <PageHeader title="Online payments" />
+      <PageHeader title="Online payments" icon="creditCard" />
       <Card>
         <p className="text-sm text-gray-400">
           Member payments go straight to your own Razorpay account. Use your{' '}

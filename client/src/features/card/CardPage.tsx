@@ -54,7 +54,7 @@ export function CardPage() {
 
   return (
     <div className="max-w-3xl">
-      <PageHeader title="My card">
+      <PageHeader title="My card" icon="card">
         <StatusPill tone={STATUS_TONE[c.status]}>{c.status}</StatusPill>
       </PageHeader>
 

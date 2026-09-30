@@ -29,7 +29,7 @@ export function VerificationsPage() {
 
   return (
     <div className="max-w-3xl">
-      <PageHeader title="ID verification" />
+      <PageHeader title="ID verification" icon="shieldCheck" />
       <div role="tablist" className="mb-4 flex gap-2">
         {STATUSES.map((s) => (
           <button
@@ -37,7 +37,7 @@ export function VerificationsPage() {
             role="tab"
             aria-selected={s === status}
             onClick={() => setStatus(s)}
-            className={`rounded-full px-3 py-1 text-sm capitalize ${s === status ? 'bg-brand-500 text-white' : 'border border-gray-700 text-gray-300'}`}
+            className={`rounded-full px-3 py-1 text-sm capitalize ${s === status ? 'bg-gradient-to-r from-brand-500 to-brand-600 text-white shadow-[0_6px_20px_-8px_rgb(226_41_74/0.9)]' : 'border border-white/10 text-gray-300 hover:border-white/25 hover:text-white'}`}
           >
             {s}
           </button>
@@ -96,7 +96,7 @@ export function VerificationsPage() {
                       value={reason}
                       onChange={(e) => setReason(e.target.value)}
                       rows={2}
-                      className="mt-1 block w-full rounded-lg border border-gray-700 bg-gray-950 px-3 py-2"
+                      className="mt-1 block w-full rounded-xl border border-white/10 bg-white/[0.035] px-3.5 py-2.5 outline-none transition focus:border-brand-400/70 focus:ring-4 focus:ring-brand-500/15"
                     />
                   </label>
                   <div className="flex gap-2">

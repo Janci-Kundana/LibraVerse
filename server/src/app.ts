@@ -14,6 +14,7 @@ import { pushRoutes } from './modules/push/routes';
 import { registerPushChannel } from './modules/push/service';
 import { adminPlanRoutes, subscriptionRoutes } from './modules/billing/routes';
 import { assistantRoutes } from './modules/assistant/routes';
+import { guideRoutes } from './modules/guide/routes';
 import { bookRoutes, copyRoutes } from './modules/books/routes';
 import { auditRoutes, platformReportRoutes, reportRoutes } from './modules/reports/routes';
 import { donationRoutes, publicDonationRoutes } from './modules/donations/routes';
@@ -113,6 +114,7 @@ export function createApp() {
   app.use('/api/audit', auditRoutes);
   app.use('/api/admin/reports', platformReportRoutes);
   app.use('/api/member/assistant', assistantRoutes);
+  app.use('/api/guide', guideRoutes);
   app.use('/api/member', memberCirculationRoutes);
   app.use('/api/member', memberRoutes);
   app.use('/api/verifications', verificationRoutes);

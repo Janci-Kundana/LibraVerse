@@ -58,6 +58,9 @@ Status: **approved 2026-09-29**. Each phase ends with green tests, run instructi
   - Celebration shown once after a confirmed membership payment (`celebratePaymentId`).
   - Deposit refund: the member requests (all books returned, something left after dues); staff approve in cash or via Razorpay (only up to the deposit paid online, refunded to those payments, Razorpay called before the deposit changes). Unpaid dues are deducted first, so an empty deposit refunds nothing. Approval closes the membership (no plan, card stops working); rejoining charges the full deposit again. Staff can also refund at the counter. Each refund runs once (the request is claimed atomically).
   - Pending: how a Library Assistant is assigned to a new member (to be decided with the user).
+- **UI and in-app guide (2026-09-30):**
+  - "Midnight luxe" theme: navy-black surfaces, crimson and gold accents, glass cards, Sora display font; grouped sidebar with icons; member home hero with the member's own card.
+  - In-app guide: a help button on every signed-in page. It shows the current page's steps from `shared/src/guide.ts` (no AI needed), and with `ANTHROPIC_API_KEY` set, `POST /api/guide` answers "how do I…?" for every role. Read-only: members get the assistant's tools (catalog, rules, own account); staff get catalog, rules and a library status count; the Super Admin gets no data tools. Links in replies are kept only for pages that role can open (server and client). Shares the assistant's rate limit.
 - Mongoose is pinned to **v8** (MongoDB driver 6). With Mongoose 9 / driver 7, the connection handshake fails inside Jest's VM sandbox ("Missing required sub-document 'driver' in the client metadata document"), although it works in plain Node. Revisit when upgrading.
 
 ## Progress

@@ -81,7 +81,7 @@ export function StaffEventsPage() {
   });
   return (
     <div className="max-w-3xl">
-      <PageHeader title="Events & notices" />
+      <PageHeader title="Events & notices" icon="megaphone" />
       <Card className="mb-6">
         <form
           onSubmit={(e) => {
@@ -123,7 +123,7 @@ export function StaffEventsPage() {
               value={f.description}
               onChange={(e) => setF({ ...f, description: e.target.value })}
               rows={3}
-              className="mt-1 block w-full rounded-lg border border-gray-700 bg-gray-950 px-3 py-2"
+              className="mt-1 block w-full rounded-xl border border-white/10 bg-white/[0.035] px-3.5 py-2.5 outline-none transition focus:border-brand-400/70 focus:ring-4 focus:ring-brand-500/15"
             />
           </label>
           <label className="flex items-center gap-2 text-sm text-gray-300 sm:col-span-2">
@@ -154,7 +154,7 @@ export function MemberEventsPage() {
   });
   return (
     <div className="max-w-3xl">
-      <PageHeader title="Notice board" />
+      <PageHeader title="Notice board" icon="megaphone" />
       {list.data?.length === 0 && <p className="text-gray-400">Nothing on the board right now.</p>}
       <EventList list={list.data ?? []} />
     </div>

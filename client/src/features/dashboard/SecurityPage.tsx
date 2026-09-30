@@ -17,7 +17,7 @@ export function SecurityPage() {
   return (
     <div className="max-w-xl">
       <h1 className="text-2xl font-semibold">Security</h1>
-      <section className="mt-6 rounded-xl border border-gray-800 bg-gray-900 p-5">
+      <section className="mt-6 glass rounded-2xl p-5">
         <h2 className="font-medium">Two-factor sign-in</h2>
         <p className="mt-1 text-sm text-gray-400">
           {user.twoFactorEnabled

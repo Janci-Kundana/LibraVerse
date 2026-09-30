@@ -39,13 +39,11 @@ async function setup(deposit: number) {
   await createUser({ libraryId: lib.id, role: 'libraryAdmin', email: 'owner@city.test' });
   await createUser({ libraryId: lib.id, role: 'librarian', email: 'staff@city.test' });
   const admin = await signedInAgent(app, 'owner@city.test');
-  await admin
-    .put('/api/library/payment-settings')
-    .send({
-      keyId: 'rzp_test_abcdefgh',
-      keySecret: 'secret_key_123',
-      webhookSecret: 'whsec_test_123456',
-    });
+  await admin.put('/api/library/payment-settings').send({
+    keyId: 'rzp_test_abcdefgh',
+    keySecret: 'secret_key_123',
+    webhookSecret: 'whsec_test_123456',
+  });
   const staff = await signedInAgent(app, 'staff@city.test');
   const m = await activeMember(app, lib.id, 'reader@city.test');
   await runWithTenant(lib.id, () =>

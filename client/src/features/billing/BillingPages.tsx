@@ -89,7 +89,7 @@ export function SubscriptionPage() {
 
   return (
     <div className="max-w-3xl">
-      <PageHeader title="Subscription" />
+      <PageHeader title="Subscription" icon="crown" />
       <Card>
         <p className="text-lg font-semibold">{s.planName} plan</p>
         <p className="text-sm text-gray-400">
@@ -143,7 +143,7 @@ export function SubscriptionPage() {
       </Card>
       <h2 className="mt-8 text-lg font-semibold">Invoices</h2>
       {s.invoices.length === 0 && <p className="text-sm text-gray-400">No payments yet.</p>}
-      <ul className="mt-2 divide-y divide-gray-800">
+      <ul className="mt-2 divide-y divide-white/[0.06]">
         {s.invoices.map((i) => (
           <li key={i.id} className="flex justify-between py-2 text-sm">
             <span>
@@ -169,7 +169,7 @@ export function AdminPlansPage() {
   });
   return (
     <div className="max-w-3xl">
-      <PageHeader title="Platform plans" />
+      <PageHeader title="Platform plans" icon="crown" />
       <div className="space-y-4">
         {plans.data?.map((p) => (
           <PlanEditor

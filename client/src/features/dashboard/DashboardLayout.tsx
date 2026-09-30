@@ -7,6 +7,7 @@ import { Icon, type IconName } from '../../components/icons';
 import { Wordmark } from '../../components/ui';
 import { useLogout, useMe } from '../auth/useAuth';
 import { MembershipCelebration } from '../card/Celebration';
+import { GuideWidget } from '../guide/GuideWidget';
 import { NotificationBell } from './NotificationBell';
 
 interface NavItem {
@@ -290,6 +291,7 @@ export function DashboardLayout() {
           </motion.div>
           {user.role === 'member' && <MembershipCelebration />}
         </main>
+        <GuideWidget role={user.role} />
       </div>
     </div>
   );

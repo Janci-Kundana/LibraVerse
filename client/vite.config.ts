@@ -45,6 +45,8 @@ export default defineConfig({
   ],
   server: {
     port: 5173,
+    // Listen on the local network too, so a phone on the same Wi-Fi can open it.
+    host: true,
     // Same-origin in development, so httpOnly auth cookies just work.
     proxy: {
       '/api': 'http://localhost:4000',

@@ -65,7 +65,7 @@ function SettingsForm({ settings: s }: { settings: LibrarySettingsDto }) {
 
   return (
     <div className="max-w-2xl">
-      <PageHeader title="Library settings" />
+      <PageHeader title="Library settings" icon="settings" />
       <Card>
         <form onSubmit={onSubmit} className="space-y-4">
           <Field
@@ -109,7 +109,7 @@ function SettingsForm({ settings: s }: { settings: LibrarySettingsDto }) {
                   onChange={(e) =>
                     setColours((cs) => cs.map((x, j) => (j === i ? e.target.value : x)))
                   }
-                  className="h-10 w-14 rounded border border-gray-700 bg-gray-950"
+                  className="h-10 w-14 rounded border border-white/10 bg-white/[0.035]"
                 />
               ))}
             </div>

@@ -173,7 +173,7 @@ export function DonationsPage() {
 
   return (
     <div className="max-w-4xl">
-      <PageHeader title="Donations" />
+      <PageHeader title="Donations" icon="gift" />
       <div role="tablist" className="mb-4 flex flex-wrap gap-2">
         {(['offered', 'accepted', 'catalogued', 'declined'] as const).map((s) => (
           <button
@@ -181,7 +181,7 @@ export function DonationsPage() {
             role="tab"
             aria-selected={s === status}
             onClick={() => setStatus(s)}
-            className={`rounded-full px-3 py-1 text-sm capitalize ${s === status ? 'bg-brand-500 text-white' : 'border border-gray-700 text-gray-300'}`}
+            className={`rounded-full px-3 py-1 text-sm capitalize ${s === status ? 'bg-gradient-to-r from-brand-500 to-brand-600 text-white shadow-[0_6px_20px_-8px_rgb(226_41_74/0.9)]' : 'border border-white/10 text-gray-300 hover:border-white/25 hover:text-white'}`}
           >
             {s}
           </button>

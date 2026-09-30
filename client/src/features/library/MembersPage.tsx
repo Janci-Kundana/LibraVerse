@@ -40,7 +40,7 @@ export function MembersPage() {
   });
   return (
     <div className="max-w-6xl">
-      <PageHeader title="Members" />
+      <PageHeader title="Members" icon="users" />
       <Field
         label="Search"
         placeholder="Name or email"
@@ -60,7 +60,7 @@ export function MembersPage() {
               <th />
             </tr>
           </thead>
-          <tbody className="divide-y divide-gray-800">
+          <tbody className="divide-y divide-white/[0.06]">
             {list.data?.map((m) => (
               <tr key={m.profileId} className="align-middle">
                 <td className="py-2 pr-3">

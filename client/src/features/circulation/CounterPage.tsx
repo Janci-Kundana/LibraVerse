@@ -15,7 +15,7 @@ export function CounterPage() {
   const [tab, setTab] = useState<Tab>('issue');
   return (
     <div className="max-w-3xl">
-      <PageHeader title="Counter" />
+      <PageHeader title="Counter" icon="scan" />
       <div role="tablist" className="mb-6 flex gap-2">
         {(['issue', 'return'] as const).map((t) => (
           <button
@@ -23,7 +23,7 @@ export function CounterPage() {
             role="tab"
             aria-selected={tab === t}
             onClick={() => setTab(t)}
-            className={`rounded-full px-4 py-1.5 text-sm capitalize ${tab === t ? 'bg-brand-500 text-white' : 'border border-gray-700 text-gray-300'}`}
+            className={`rounded-full px-4 py-1.5 text-sm capitalize ${tab === t ? 'bg-gradient-to-r from-brand-500 to-brand-600 text-white shadow-[0_6px_20px_-8px_rgb(226_41_74/0.9)]' : 'border border-white/10 text-gray-300 hover:border-white/25 hover:text-white'}`}
           >
             {t === 'issue' ? 'Issue' : 'Return'}
           </button>

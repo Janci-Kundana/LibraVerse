@@ -40,8 +40,11 @@ function useWishlistToggle() {
 
 export function BookCard({ book, action }: { book: CatalogBookDto; action?: ReactNode }) {
   return (
-    <Card className="flex gap-3">
-      <Link to={`/member/books/${book.id}`} className="shrink-0">
+    <Card interactive className="flex gap-4">
+      <Link
+        to={`/member/books/${book.id}`}
+        className="shrink-0 transition duration-300 hover:-rotate-2"
+      >
         <BookCover url={book.coverUrl} title={book.title} className="h-28 w-20" />
       </Link>
       <div className="min-w-0 flex-1">
@@ -98,7 +101,7 @@ export function MemberCatalogPage() {
 
   return (
     <div className="max-w-6xl">
-      <PageHeader title="Catalog" />
+      <PageHeader title="Catalog" icon="library" />
       <form onSubmit={(e: FormEvent) => e.preventDefault()} className="grid gap-3 md:grid-cols-5">
         <label className="md:col-span-2">
           <span className="text-sm text-gray-300">Search</span>
@@ -110,7 +113,7 @@ export function MemberCatalogPage() {
               setPage(1);
             }}
             placeholder="Title, author or ISBN"
-            className="mt-1 block w-full rounded-lg border border-gray-700 bg-gray-950 px-3 py-2"
+            className="mt-1 block w-full rounded-xl border border-white/10 bg-white/[0.035] px-3.5 py-2.5 outline-none transition focus:border-brand-400/70 focus:ring-4 focus:ring-brand-500/15"
           />
         </label>
         <SelectField
@@ -315,7 +318,7 @@ export function MemberBookPage() {
             onChange={(e) => setText(e.target.value)}
             rows={2}
             placeholder={mine?.text || 'What did you think?'}
-            className="block w-full rounded-lg border border-gray-700 bg-gray-950 px-3 py-2"
+            className="block w-full rounded-xl border border-white/10 bg-white/[0.035] px-3.5 py-2.5 outline-none transition focus:border-brand-400/70 focus:ring-4 focus:ring-brand-500/15"
           />
           <ErrorText>{review.error ? errorMessage(review.error) : ''}</ErrorText>
           <Button type="submit" disabled={!(rating || mine)} busy={review.isPending}>
@@ -350,7 +353,7 @@ export function WishlistPage() {
   const toggle = useWishlistToggle();
   return (
     <div className="max-w-5xl">
-      <PageHeader title="Wishlist" />
+      <PageHeader title="Wishlist" icon="heart" />
       {list.data?.length === 0 && (
         <p className="text-gray-400">Nothing here yet. Tap ♡ on a book to save it.</p>
       )}

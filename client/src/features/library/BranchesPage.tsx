@@ -32,7 +32,7 @@ export function BranchesPage() {
 
   return (
     <div className="max-w-2xl">
-      <PageHeader title="Branches" />
+      <PageHeader title="Branches" icon="mapPin" />
       <ul className="space-y-2">
         {branches.data?.map((b) => (
           <li

@@ -47,7 +47,7 @@ function getClient(): Client {
   return client;
 }
 
-const TOOLS: Anthropic.Beta.BetaTool[] = [
+export const TOOLS: Anthropic.Beta.BetaTool[] = [
   {
     name: 'search_catalog',
     description:
@@ -82,7 +82,8 @@ const TOOLS: Anthropic.Beta.BetaTool[] = [
   },
 ];
 
-async function runTool(
+/** Runs one of the member tools above in the caller's tenant context. */
+export async function runMemberTool(
   name: string,
   input: unknown,
   memberId: string,
@@ -166,15 +167,36 @@ export async function chat(
   memberId: string,
   messages: z.infer<typeof chatBody>['messages'],
 ) {
-  const anthropic = getClient();
   const library = await LibraryModel.findById(libraryId).select('name').lean();
   const system = `You are the friendly assistant of ${library?.name ?? 'the library'} on LibraVerse, talking with a library member.
 Answer questions about books in this library's catalog, borrowing rules, fines and the member's own account, using the tools; never guess availability, prices, dates or fines.
 Money is in Indian rupees. Keep answers short and practical (a few sentences or a short list). Today is ${new Date().toISOString().slice(0, 10)}.
 You cannot issue, renew, reserve or pay for anything yourself: tell the member where to do it in the app (My books, Catalog, Payments) or at the counter.
 If asked about something unrelated to the library, say briefly that you can only help with library questions.`;
+  return converse({
+    system,
+    tools: TOOLS,
+    messages,
+    runTool: (name, input) => runMemberTool(name, input, memberId, libraryId),
+    refusal: 'Sorry, I can’t help with that. Ask me about books, borrowing or fines.',
+    noAnswer: 'Sorry, I could not find an answer. Please ask at the counter.',
+  });
+}
 
-  const convo: Anthropic.Beta.BetaMessageParam[] = messages.map((m) => ({
+/**
+ * The tool loop shared by the assistant and the in-app guide: ask Claude, run
+ * the tools it calls (read-only lookups), and repeat until it answers.
+ */
+export async function converse(opts: {
+  system: string;
+  tools: Anthropic.Beta.BetaTool[];
+  messages: { role: 'user' | 'assistant'; content: string }[];
+  runTool: (name: string, input: unknown) => Promise<string>;
+  refusal: string;
+  noAnswer: string;
+}) {
+  const anthropic = getClient();
+  const convo: Anthropic.Beta.BetaMessageParam[] = opts.messages.map((m) => ({
     role: m.role,
     content: m.content,
   }));
@@ -183,8 +205,8 @@ If asked about something unrelated to the library, say briefly that you can only
     const response = await anthropic.beta.messages.create({
       model: MODEL,
       max_tokens: 4000,
-      system,
-      tools: TOOLS,
+      system: opts.system,
+      ...(opts.tools.length ? { tools: opts.tools } : {}),
       output_config: { effort: 'low' },
       // Server-side refusal fallback: a declined request is retried on the
       // fallback model chosen by category.
@@ -193,9 +215,7 @@ If asked about something unrelated to the library, say briefly that you can only
       messages: convo,
     });
 
-    if (response.stop_reason === 'refusal') {
-      return { reply: 'Sorry, I can’t help with that. Ask me about books, borrowing or fines.' };
-    }
+    if (response.stop_reason === 'refusal') return { reply: opts.refusal };
     const toolUses = response.content.filter(
       (b): b is Anthropic.Beta.BetaToolUseBlock => b.type === 'tool_use',
     );
@@ -205,7 +225,7 @@ If asked about something unrelated to the library, say briefly that you can only
         .map((b) => b.text)
         .join('\n')
         .trim();
-      return { reply: text || 'Sorry, I could not find an answer. Please ask at the counter.' };
+      return { reply: text || opts.noAnswer };
     }
 
     convo.push({ role: 'assistant', content: response.content });
@@ -215,7 +235,7 @@ If asked about something unrelated to the library, say briefly that you can only
         results.push({
           type: 'tool_result',
           tool_use_id: tool.id,
-          content: await runTool(tool.name, tool.input, memberId, libraryId),
+          content: await opts.runTool(tool.name, tool.input),
         });
       } catch {
         results.push({

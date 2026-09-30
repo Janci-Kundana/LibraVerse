@@ -38,18 +38,15 @@ export function AssistantPage() {
   if (status.data && !status.data.enabled) {
     return (
       <div className="max-w-2xl">
-        <PageHeader title="Library assistant" />
+        <PageHeader title="Library assistant" icon="sparkles" />
         <p className="text-gray-400">The assistant is not switched on for this library yet.</p>
       </div>
     );
   }
   return (
     <div className="flex max-w-2xl flex-col">
-      <PageHeader title="Library assistant" />
-      <div
-        className="min-h-[300px] space-y-3 rounded-xl border border-gray-800 bg-gray-900 p-4"
-        aria-live="polite"
-      >
+      <PageHeader title="Library assistant" icon="sparkles" />
+      <div className="min-h-[300px] space-y-3 glass rounded-2xl p-4" aria-live="polite">
         {messages.length === 0 && (
           <div>
             <p className="text-sm text-gray-400">
@@ -95,7 +92,7 @@ export function AssistantPage() {
             onChange={(e) => setDraft(e.target.value)}
             maxLength={2000}
             placeholder="Type a question"
-            className="block w-full rounded-lg border border-gray-700 bg-gray-950 px-3 py-2"
+            className="block w-full rounded-xl border border-white/10 bg-white/[0.035] px-3.5 py-2.5 outline-none transition focus:border-brand-400/70 focus:ring-4 focus:ring-brand-500/15"
           />
         </label>
         <Button type="submit" disabled={!draft.trim()} busy={ask.isPending}>

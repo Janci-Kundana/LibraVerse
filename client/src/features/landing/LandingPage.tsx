@@ -135,7 +135,7 @@ const ROLES: { icon: IconName; who: string; text: string }[] = [
   {
     icon: 'users',
     who: 'Members',
-    text: 'Search and reserve books, renew loans, pay fines and carry their card on their phone.',
+    text: 'Search and reserve books, pay fines and carry their card on their phone.',
   },
 ];
 
