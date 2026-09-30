@@ -45,7 +45,7 @@ const MEMBER: GuidePage[] = [
     steps: [
       'Overdue books build up a daily fine; return them at the counter to stop it.',
       'Unpaid fines show at the top with a "Pay ₹… now" button to pay online; you can also pay in cash at the counter.',
-      'Need more time? Ask staff at the counter to renew a book before its due date.',
+      'Need more time? Tap "Renew" on a book before it is overdue (up to the library’s renewal limit; not if another member is waiting for it or you have unpaid fines).',
       'Reservations show when a reserved book is ready to collect.',
     ],
   },
