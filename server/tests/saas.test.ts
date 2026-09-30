@@ -29,6 +29,7 @@ let orders = 0;
 const gateway: Gateway = {
   keyId: 'rzp_test_platform1',
   createOrder: async () => ({ id: `order_p${++orders}` }),
+  fetchOrderPayments: async () => [],
   refund: async (paymentId, amount) => {
     refunds.push({ paymentId, amount });
     return { id: `rfnd_p${refunds.length}` };

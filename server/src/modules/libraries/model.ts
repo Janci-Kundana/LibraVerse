@@ -34,6 +34,12 @@ const librarySchema = new Schema(
           maxRenewals: { type: Number, default: 2, min: 0, max: 10 },
           holdDays: { type: Number, default: 3, min: 1, max: 30 },
           lostBookCharge: { type: Number, default: 50_000, min: 0 }, // paise
+          // Security deposit every member pays (same for all plans), paise, at least ₹1.
+          depositAmount: { type: Number, default: 50_000, min: 100 },
+          // Unpaid dues: a warning every N days (3 warnings), then the deduction
+          // this many days after the third warning (notice the day before).
+          warningIntervalDays: { type: Number, default: 3, min: 1, max: 30 },
+          deductionGraceDays: { type: Number, default: 4, min: 2, max: 60 },
         },
         { _id: false },
       ),

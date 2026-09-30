@@ -1,6 +1,6 @@
 import { createHmac, randomBytes, timingSafeEqual } from 'node:crypto';
 import QRCode from 'qrcode';
-import { Types } from 'mongoose';
+import { Types, type HydratedDocument } from 'mongoose';
 import type {
   CheckoutDto,
   PaymentDto,
@@ -19,6 +19,7 @@ import { recordAudit } from '../audit/service';
 import { verifyCardToken } from '../card/token';
 import { DAY_MS, rupees } from '../circulation/rules';
 import { findUsableCoupon } from '../coupons/service';
+import { closeCycleIfPaid, collectDeposit, depositShortfall } from '../dues/service';
 import { LibraryModel } from '../libraries/model';
 import { LoanModel } from '../loans/model';
 import { MemberProfileModel } from '../members/model';
@@ -98,9 +99,16 @@ interface Charge {
   couponCode: string | null;
   planId: Types.ObjectId | null;
   loanIds: Types.ObjectId[];
+  /** part of `amount` that tops up the security deposit */
+  depositAmount: number;
 }
 
-async function priceMembership(planId: string, couponCode?: string): Promise<Charge> {
+async function priceMembership(
+  libraryId: string,
+  memberId: Types.ObjectId,
+  planId: string,
+  couponCode?: string,
+): Promise<Charge> {
   const plan = await MembershipPlanModel.findOne({
     _id: parseId(planId, 'Plan'),
     active: true,
@@ -114,13 +122,17 @@ async function priceMembership(planId: string, couponCode?: string): Promise<Cha
     discount = Math.round((plan.price * coupon.discountPercent) / 100);
     code = coupon.code;
   }
+  // The deposit (same for every member) is collected with the first
+  // membership, and topped back up at renewal if deductions used some of it.
+  const depositAmount = await depositShortfall(libraryId, memberId);
   return {
     purpose: 'membership',
-    amount: plan.price - discount,
+    amount: plan.price - discount + depositAmount,
     discount,
     couponCode: code,
     planId: plan._id,
     loanIds: [],
+    depositAmount,
   };
 }
 
@@ -129,11 +141,14 @@ async function priceDues(memberId: Types.ObjectId): Promise<Charge> {
     memberId,
     duesPaidAt: null,
     status: { $in: ['returned', 'lost'] },
-    $expr: { $gt: [{ $add: ['$fineAmount', '$damageCharge'] }, 0] },
   })
-    .select('fineAmount damageCharge')
+    .select('fineAmount damageCharge duesPaidAmount')
     .lean();
-  const amount = loans.reduce((sum, l) => sum + l.fineAmount + l.damageCharge, 0);
+  // Only what is still owed: a deposit deduction may have paid part of it.
+  const amount = loans.reduce(
+    (sum, l) => sum + Math.max(0, l.fineAmount + l.damageCharge - (l.duesPaidAmount ?? 0)),
+    0,
+  );
   if (amount === 0) throw new AppError(409, 'NOTHING_DUE', 'There are no fines to pay');
   return {
     purpose: 'fine',
@@ -142,6 +157,7 @@ async function priceDues(memberId: Types.ObjectId): Promise<Charge> {
     couponCode: null,
     planId: null,
     loanIds: loans.map((l) => l._id),
+    depositAmount: 0,
   };
 }
 
@@ -161,10 +177,10 @@ async function assertVerified(memberId: Types.ObjectId) {
 export type ChargeRequest =
   { purpose: 'membership'; planId: string; couponCode?: string } | { purpose: 'fine' };
 
-async function priceFor(memberId: Types.ObjectId, req: ChargeRequest) {
+async function priceFor(libraryId: string, memberId: Types.ObjectId, req: ChargeRequest) {
   await assertVerified(memberId);
   return req.purpose === 'membership'
-    ? priceMembership(req.planId, req.couponCode)
+    ? priceMembership(libraryId, memberId, req.planId, req.couponCode)
     : priceDues(memberId);
 }
 
@@ -213,7 +229,7 @@ export async function startCheckout(
   req: ChargeRequest,
 ): Promise<CheckoutDto> {
   const memberId = new Types.ObjectId(userId);
-  const charge = await priceFor(memberId, req);
+  const charge = await priceFor(libraryId, memberId, req);
   const { payment, keyId } = await createGatewayPayment(libraryId, memberId, charge, 'online');
   const [user, library] = await Promise.all([
     UserModel.findById(memberId).select('name email').lean(),
@@ -246,7 +262,7 @@ export async function counterPayment(
   actor: Actor,
 ) {
   const memberId = new Types.ObjectId(verifyCardToken(input.memberToken, libraryId));
-  const charge = await priceFor(memberId, input);
+  const charge = await priceFor(libraryId, memberId, input);
 
   if (input.method === 'counterUpi') {
     const { payment } = await createGatewayPayment(libraryId, memberId, charge, 'counterUpi');
@@ -333,16 +349,27 @@ async function applySuccess(libraryId: string, payment: PaymentDoc) {
       profile.set({
         planId: plan._id,
         validTill: new Date(start.getTime() + plan.durationDays * DAY_MS),
+        currentPeriodStart: start,
         cardTier: plan.tier,
         expiryReminderAt: null,
+        // Shown once as a celebration, only after a confirmed payment.
+        celebratePaymentId: payment._id,
       });
       await profile.save();
+      await collectDeposit(payment.memberId, payment.depositAmount ?? 0, payment._id);
     }
   } else if (payment.purpose === 'fine') {
-    await LoanModel.updateMany(
-      { _id: { $in: payment.loanIds }, duesPaidAt: null },
-      { $set: { duesPaidAt: now, duesPaymentId: payment._id } },
-    );
+    // Pays exactly what each listed loan still owes, then closes the dues cycle.
+    await LoanModel.updateMany({ _id: { $in: payment.loanIds }, duesPaidAt: null }, [
+      {
+        $set: {
+          duesPaidAmount: { $add: ['$fineAmount', '$damageCharge'] },
+          duesPaidAt: now,
+          duesPaymentId: payment._id,
+        },
+      },
+    ]);
+    await closeCycleIfPaid(payment.memberId, 'payment');
   }
 
   const library = await LibraryModel.findById(libraryId).select('slug').lean();
@@ -351,10 +378,39 @@ async function applySuccess(libraryId: string, payment: PaymentDoc) {
 
   const { email, data } = await receiptData(libraryId, payment);
   if (email) {
+    const profile =
+      payment.purpose === 'membership'
+        ? await MemberProfileModel.findOne({ userId: payment.memberId })
+            .select('validTill membershipNo depositBalance')
+            .lean()
+        : null;
+    const membershipLines = profile
+      ? [
+          `Congratulations! Your membership is active.`,
+          '',
+          `Plan: ${data.description.replace(/^Membership: /, '')}`,
+          `Valid till: ${profile.validTill?.toLocaleDateString('en-IN', { dateStyle: 'medium' }) ?? '-'}`,
+          `Card number: ${profile.membershipNo?.replace(/(\d{4})(?=\d)/g, '$1 ') ?? '-'}`,
+          ...(payment.depositAmount
+            ? [
+                `Security deposit paid: ${rupees(payment.depositAmount)} (balance ${rupees(profile.depositBalance ?? 0)})`,
+              ]
+            : []),
+          '',
+        ]
+      : [];
     await sendMail({
       to: email,
-      subject: `Receipt ${data.receiptNo}: ${rupees(payment.amount)} paid to ${data.libraryName}`,
-      text: `Hi ${data.memberName},\n\nWe received ${rupees(payment.amount)} for ${data.description.toLowerCase()}. Your receipt is attached.`,
+      subject:
+        payment.purpose === 'membership'
+          ? `Your ${data.libraryName} membership is active (receipt ${data.receiptNo})`
+          : `Receipt ${data.receiptNo}: ${rupees(payment.amount)} paid to ${data.libraryName}`,
+      text: [
+        `Hi ${data.memberName},`,
+        '',
+        ...membershipLines,
+        `We received ${rupees(payment.amount)} for ${data.description.toLowerCase()}. Your receipt is attached.`,
+      ].join('\n'),
       attachments: [
         {
           filename: `receipt-${data.receiptNo}.pdf`,
@@ -403,7 +459,13 @@ interface RazorpayEvent {
   event: string;
   payload?: {
     payment?: {
-      entity?: { id?: string; order_id?: string; amount?: number; error_description?: string };
+      entity?: {
+        id?: string;
+        order_id?: string;
+        amount?: number;
+        error_description?: string;
+        created_at?: number;
+      };
     };
   };
 }
@@ -441,97 +503,215 @@ export async function handleWebhook(
   return runWithTenant(libraryId, async () => {
     const payment = await PaymentModel.findOne({ razorpayOrderId: entity.order_id });
     if (!payment) return 'unknown order';
-
     if (event.event === 'payment.failed') {
-      if (payment.status !== 'created' && payment.status !== 'pending')
-        return `already ${payment.status}`;
-      const { payment: failed } = await transitionPayment(payment._id, 'failed', {
-        source: 'webhook',
-        set: {
-          failureReason: entity.error_description ?? 'Payment failed',
-          razorpayPaymentId: entity.id,
-        },
-      });
-      await push(libraryId, failed);
-      return 'failed';
+      return settleFailure(
+        libraryId,
+        payment,
+        entity.id!,
+        entity.error_description ?? 'Payment failed',
+        'webhook',
+      );
     }
-
     if (event.event !== 'payment.captured' && event.event !== 'order.paid')
       return `ignored ${event.event}`;
-    if (entity.amount !== payment.amount) {
-      await recordAudit({
-        libraryId,
-        actor: null,
-        action: 'payment.amountMismatch',
-        target: { type: 'payment', id: payment._id },
-        details: {
-          expected: payment.amount,
-          received: entity.amount ?? null,
-          razorpayPaymentId: entity.id,
-        },
-      });
-      return 'amount mismatch';
-    }
-    if (payment.status === 'success') return 'already success';
+    return settleCapture(libraryId, payment, {
+      id: entity.id!,
+      amount: entity.amount ?? -1,
+      createdAt: entity.created_at ? new Date(entity.created_at * 1000) : null,
+      source: 'webhook',
+    });
+  });
+}
 
-    const now = new Date();
-    if (
-      (payment.status === 'created' || payment.status === 'pending') &&
-      now <= payment.expiresAt
-    ) {
-      const { payment: paid, changed } = await transitionPayment(payment._id, 'success', {
-        source: 'webhook',
-        set: { razorpayPaymentId: entity.id, paidAt: now },
-      });
-      if (changed) {
-        await recordAudit({
-          libraryId,
-          actor: null,
-          action: 'payment.success',
-          target: { type: 'payment', id: paid._id },
-          details: {
-            amount: paid.amount,
-            purpose: paid.purpose,
-            method: paid.method,
-            razorpayPaymentId: entity.id,
-          },
-        });
-        await applySuccess(libraryId, paid);
-      }
-      return 'success';
-    }
+type PaymentDocument = HydratedDocument<Payment>;
 
-    // Captured after the window closed: never activates anything; refund it.
-    if (payment.status === 'created' || payment.status === 'pending') {
-      await transitionPayment(payment._id, 'expired', {
-        source: 'webhook',
-        note: 'captured after expiry',
-      });
-    }
-    if (payment.lateCapture) return 'late capture already refunded';
-    const gateway = await libraryGateway(libraryId);
-    const refund = await callGateway(() =>
-      gateway.refund(entity.id!, entity.amount!, {
-        reason: 'captured after payment request expired',
-      }),
-    );
-    await PaymentModel.updateOne(
-      { _id: payment._id },
-      {
-        $set: {
-          lateCapture: { razorpayPaymentId: entity.id, razorpayRefundId: refund.id, at: now },
-        },
-      },
-    );
+/** A failed attempt ends a still-open request (one attempt per order). */
+async function settleFailure(
+  libraryId: string,
+  payment: PaymentDocument,
+  razorpayPaymentId: string | null,
+  reason: string,
+  source: string,
+) {
+  if (payment.status !== 'created' && payment.status !== 'pending')
+    return `already ${payment.status}`;
+  const { payment: failed, changed } = await transitionPayment(payment._id, 'failed', {
+    source,
+    set: { failureReason: reason, ...(razorpayPaymentId ? { razorpayPaymentId } : {}) },
+  });
+  if (changed) await push(libraryId, failed);
+  return 'failed';
+}
+
+/**
+ * A capture reported by the verified webhook or read from Razorpay's API.
+ * Succeeds only if the amount matches and Razorpay took the payment within the
+ * request's window; otherwise it never activates anything and is refunded.
+ * Repeated reports are no-ops (terminal states never change).
+ */
+async function settleCapture(
+  libraryId: string,
+  payment: PaymentDocument,
+  capture: { id: string; amount: number; createdAt: Date | null; source: string },
+) {
+  if (capture.amount !== payment.amount) {
     await recordAudit({
       libraryId,
       actor: null,
-      action: 'payment.lateCaptureRefunded',
+      action: 'payment.amountMismatch',
       target: { type: 'payment', id: payment._id },
-      details: { amount: entity.amount, razorpayPaymentId: entity.id, razorpayRefundId: refund.id },
+      details: {
+        expected: payment.amount,
+        received: capture.amount,
+        razorpayPaymentId: capture.id,
+      },
     });
-    return 'late capture refunded';
+    return 'amount mismatch';
+  }
+  if (payment.status === 'success') return 'already success';
+
+  const now = new Date();
+  const paidAt = capture.createdAt && capture.createdAt < now ? capture.createdAt : now;
+  if (
+    (payment.status === 'created' || payment.status === 'pending') &&
+    paidAt <= payment.expiresAt
+  ) {
+    const { payment: paid, changed } = await transitionPayment(payment._id, 'success', {
+      source: capture.source,
+      set: { razorpayPaymentId: capture.id, paidAt: now },
+    });
+    if (changed) {
+      await recordAudit({
+        libraryId,
+        actor: null,
+        action: 'payment.success',
+        target: { type: 'payment', id: paid._id },
+        details: {
+          amount: paid.amount,
+          purpose: paid.purpose,
+          method: paid.method,
+          razorpayPaymentId: capture.id,
+          confirmedBy: capture.source,
+        },
+      });
+      await applySuccess(libraryId, paid);
+    }
+    return 'success';
+  }
+
+  // Taken after the window closed, or for a request already failed/expired.
+  if (payment.status === 'created' || payment.status === 'pending') {
+    await transitionPayment(payment._id, 'expired', {
+      source: capture.source,
+      note: 'captured after expiry',
+    });
+  }
+  if (payment.lateCapture) return 'late capture already refunded';
+  const gateway = await libraryGateway(libraryId);
+  const refund = await callGateway(() =>
+    gateway.refund(capture.id, capture.amount, {
+      reason: 'captured after payment request expired',
+    }),
+  );
+  await PaymentModel.updateOne(
+    { _id: payment._id },
+    {
+      $set: {
+        lateCapture: { razorpayPaymentId: capture.id, razorpayRefundId: refund.id, at: now },
+      },
+    },
+  );
+  await recordAudit({
+    libraryId,
+    actor: null,
+    action: 'payment.lateCaptureRefunded',
+    target: { type: 'payment', id: payment._id },
+    details: { amount: capture.amount, razorpayPaymentId: capture.id, razorpayRefundId: refund.id },
   });
+  return 'late capture refunded';
+}
+
+/**
+ * Server-to-server check (no webhook needed): asks Razorpay for the order's
+ * payment attempts with the library's own keys. The browser's word is never
+ * used. Returns the payment's status afterwards. Tenant context.
+ */
+export async function reconcilePayment(libraryId: string, paymentId: Types.ObjectId | string) {
+  const payment = await PaymentModel.findById(paymentId);
+  if (!payment) throw notFound('Payment');
+  if (!payment.razorpayOrderId || (payment.status !== 'created' && payment.status !== 'pending')) {
+    return payment.status;
+  }
+  const gateway = await libraryGateway(libraryId);
+  const attempts = await callGateway(() => gateway.fetchOrderPayments(payment.razorpayOrderId!));
+  const captured = attempts.find((a) => a.status === 'captured');
+  if (captured) {
+    await settleCapture(libraryId, payment, { ...captured, source: 'api-check' });
+  } else if (attempts.length > 0 && attempts.every((a) => a.status === 'failed')) {
+    const last = attempts[attempts.length - 1]!;
+    await settleFailure(
+      libraryId,
+      payment,
+      last.id,
+      last.errorDescription ?? 'Payment failed',
+      'api-check',
+    );
+  }
+  return (await PaymentModel.findById(payment._id).select('status').lean())!.status;
+}
+
+/** The member closed Checkout. Check Razorpay first; if nothing was paid, end the request. */
+export async function cancelPayment(libraryId: string, paymentId: Types.ObjectId | string) {
+  const status = await reconcilePayment(libraryId, paymentId);
+  if (status !== 'created' && status !== 'pending') return status;
+  const payment = await PaymentModel.findById(paymentId);
+  const gateway = await libraryGateway(libraryId);
+  const attempts = payment?.razorpayOrderId
+    ? await callGateway(() => gateway.fetchOrderPayments(payment.razorpayOrderId!))
+    : [];
+  // An attempt still in flight (e.g. a UPI app approval) keeps the request open.
+  if (attempts.some((a) => a.status === 'created' || a.status === 'authorized')) return status;
+  await settleFailure(libraryId, payment!, null, 'Cancelled before payment', 'checkout-cancelled');
+  return 'failed';
+}
+
+async function ownedPayment(userId: string, paymentId: string) {
+  const payment = await PaymentModel.findOne({
+    _id: parseId(paymentId, 'Payment'),
+    memberId: new Types.ObjectId(userId),
+  }).select('_id');
+  if (!payment) throw notFound('Payment');
+  return payment._id;
+}
+
+export async function verifyMemberPayment(libraryId: string, userId: string, paymentId: string) {
+  await reconcilePayment(libraryId, await ownedPayment(userId, paymentId));
+  return getPayment(paymentId, userId);
+}
+
+export async function cancelMemberPayment(libraryId: string, userId: string, paymentId: string) {
+  await cancelPayment(libraryId, await ownedPayment(userId, paymentId));
+  return getPayment(paymentId, userId);
+}
+
+/** Open gateway payments older than 90 s: ask Razorpay (cron, every minute). */
+export async function reconcileOpenPayments(libraryId: string, now = new Date()) {
+  const open = await PaymentModel.find({
+    status: { $in: ['created', 'pending'] },
+    razorpayOrderId: { $ne: null },
+    createdAt: { $lt: new Date(now.getTime() - 90_000) },
+    expiresAt: { $gte: now },
+  })
+    .select('_id')
+    .limit(25)
+    .lean();
+  for (const p of open) await reconcilePayment(libraryId, p._id).catch(() => undefined);
+  return open.length;
+}
+
+export async function verifyStaffPayment(libraryId: string, paymentId: string) {
+  await reconcilePayment(libraryId, parseId(paymentId, 'Payment'));
+  return getPayment(paymentId);
 }
 
 // ---------------------------------------------------------------- expiry (TC-02)
@@ -544,6 +724,8 @@ export async function expirePayments(libraryId: string, now = new Date()) {
   });
   let count = 0;
   for (const p of stale) {
+    // A payment Razorpay took in time must not expire just because no webhook came.
+    if (p.razorpayOrderId) await reconcilePayment(libraryId, p._id).catch(() => undefined);
     try {
       const { payment, changed } = await transitionPayment(p._id, 'expired', { source: 'cron' });
       if (changed) {
@@ -674,6 +856,16 @@ export function publicPay(token: string): Promise<PublicPayDto> {
       orderId: p.razorpayOrderId ?? null,
       keyId: library?.razorpayKeyId ?? null,
     };
+  });
+}
+
+/** The pay-link page asks the server to check with Razorpay (no trust in the browser). */
+export function publicPayVerify(token: string) {
+  return runAsSystem('public:pay-link', async () => {
+    const p = await PaymentModel.findOne({ payToken: token }).select('libraryId').lean();
+    if (!p) throw notFound('Payment');
+    await runWithTenant(p.libraryId, () => reconcilePayment(String(p.libraryId), p._id));
+    return publicPay(token);
   });
 }
 

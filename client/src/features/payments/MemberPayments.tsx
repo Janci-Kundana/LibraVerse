@@ -44,7 +44,20 @@ export function PayButton({
         description: c.payment.planName ? `Membership: ${c.payment.planName}` : 'Library fines',
         prefill: c.prefill,
         timeout: Math.max(60, Math.round((Date.parse(c.payment.expiresAt) - Date.now()) / 1000)),
-        handler: () => {},
+        // Razorpay says it's done: ask the server to confirm with Razorpay.
+        handler: () => {
+          void post(`/api/member/payments/${c.payment.id}/verify`)
+            .then(refresh)
+            .catch(() => {});
+        },
+        // Closed without paying: the server checks, then ends the request.
+        modal: {
+          ondismiss: () => {
+            void post(`/api/member/payments/${c.payment.id}/cancel`)
+              .then(refresh)
+              .catch(() => {});
+          },
+        },
       }).catch(() => {});
     },
   });
@@ -87,7 +100,7 @@ function PaymentWaiting({
   const [status] = usePaymentStatus(
     payment.id,
     payment.status,
-    `/api/member/payments/${payment.id}`,
+    `/api/member/payments/${payment.id}/verify`,
   );
   const left = useCountdown(payment.expiresAt);
   useEffect(() => {

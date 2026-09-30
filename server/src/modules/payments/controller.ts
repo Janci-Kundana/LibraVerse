@@ -45,6 +45,18 @@ export const opened: RequestHandler = async (req, res) => {
   await payments.markOpened(me(req), String(req.params.id));
   res.status(204).end();
 };
+export const verify: RequestHandler = async (req, res) => {
+  res.json(await payments.verifyMemberPayment(libraryOf(req), me(req), String(req.params.id)));
+};
+export const cancel: RequestHandler = async (req, res) => {
+  res.json(await payments.cancelMemberPayment(libraryOf(req), me(req), String(req.params.id)));
+};
+export const staffVerify: RequestHandler = async (req, res) => {
+  res.json(await payments.verifyStaffPayment(libraryOf(req), String(req.params.id)));
+};
+export const publicPayVerify: RequestHandler = async (req, res) => {
+  res.json(await payments.publicPayVerify(String(req.params.token)));
+};
 export const myList: RequestHandler = async (req, res) => {
   res.json(await payments.listPayments({ memberId: me(req) }));
 };

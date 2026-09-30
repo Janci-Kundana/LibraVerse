@@ -35,12 +35,18 @@ const fakeGateway: Gateway = {
     refunds.push({ paymentId, amount });
     return { id: `rfnd_${refunds.length}` };
   },
+  async fetchOrderPayments(orderId) {
+    return orderPayments.get(orderId) ?? [];
+  },
 };
+/** What the fake Razorpay API reports for each order (server-to-server check). */
+const orderPayments = new Map<string, Awaited<ReturnType<Gateway['fetchOrderPayments']>>>();
 
 beforeAll(() => setGatewayFactory(() => fakeGateway));
 afterAll(() => setGatewayFactory());
 beforeEach(() => {
   refunds.length = 0;
+  orderPayments.clear();
 });
 
 async function setup() {
@@ -70,7 +76,15 @@ async function setup() {
   await runWithTenant(lib.id, () =>
     MemberProfileModel.updateOne(
       { _id: m.profile._id },
-      { $set: { planId: null, validTill: null } },
+      // Deposit already held, so these tests see plan prices only (deposit has its own tests).
+      {
+        $set: {
+          planId: null,
+          validTill: null,
+          depositBalance: 50_000,
+          depositCollectedAt: new Date(),
+        },
+      },
     ),
   );
   return { lib, admin, staff, plan, m };
@@ -205,7 +219,10 @@ describe('online membership payment', () => {
     expect(profile).toMatchObject({ cardTier: 'gold' });
     const days = (profile!.validTill!.getTime() - Date.now()) / 86_400_000;
     expect(days).toBeGreaterThan(89.9);
-    const mail = testOutbox.find((x) => x.subject.startsWith('Receipt'));
+    const mail = testOutbox.find((x) => x.subject.includes('membership is active'));
+    expect(mail?.subject).toMatch(/^Your Library city membership is active \(receipt CITY-/);
+    expect(mail?.text).toContain('Congratulations! Your membership is active.');
+    expect(mail?.text).toContain('Plan: Gold');
     expect(mail?.attachments?.[0]?.filename).toMatch(/^receipt-CITY-\d{8}-\w{6}\.pdf$/);
     const pdf = await m.agent.get(`/api/member/payments/${paymentId}/receipt.pdf`).buffer(true);
     expect((pdf.body as Buffer).subarray(0, 5).toString()).toBe('%PDF-');

@@ -13,6 +13,9 @@ export const updateSettingsBody = z.object({
       maxRenewals: z.number().int().min(0).max(10),
       holdDays: z.number().int().min(1).max(30),
       lostBookCharge: z.number().int().min(0).max(10_000_000),
+      depositAmount: z.number().int().min(100, 'the deposit must be at least ₹1').max(10_000_000),
+      warningIntervalDays: z.number().int().min(1).max(30).default(3),
+      deductionGraceDays: z.number().int().min(2).max(60).default(4),
     })
     .optional(),
 });

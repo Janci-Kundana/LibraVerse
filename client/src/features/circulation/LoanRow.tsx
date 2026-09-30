@@ -25,7 +25,11 @@ export function LoanSummary({ loan, showMember = false }: { loan: LoanDto; showM
         {loan.status !== 'active' && owed > 0 && (
           <StatusPill tone={loan.duesPaid ? 'green' : 'red'}>
             {rupees(owed)} {loan.chargeNote ? `(${loan.chargeNote.toLowerCase()})` : 'late fine'} ·{' '}
-            {loan.duesPaid ? 'paid' : 'unpaid'}
+            {loan.duesPaid
+              ? 'paid'
+              : loan.duesPaidAmount > 0
+                ? `${rupees(owed - loan.duesPaidAmount)} still owed`
+                : 'unpaid'}
           </StatusPill>
         )}
         {loan.status === 'lost' && <StatusPill tone="gray">lost</StatusPill>}

@@ -12,6 +12,7 @@ import { BookCopyModel } from '../src/modules/copies/model';
 import { ReviewModel } from '../src/modules/reviews/model';
 import { CouponModel } from '../src/modules/coupons/model';
 import { DonationModel } from '../src/modules/donations/model';
+import { DepositTransactionModel } from '../src/modules/dues/model';
 import { EventModel } from '../src/modules/events/model';
 import { NotificationModel } from '../src/modules/notifications/model';
 import { LoanModel } from '../src/modules/loans/model';
@@ -157,6 +158,18 @@ const TENANT_MODELS: TenantCase[] = [
     model: EventModel,
     data: (tag) => ({ title: `Event ${tag}`, createdBy: new Types.ObjectId() }),
     update: { title: 'changed' },
+  },
+  {
+    model: DepositTransactionModel,
+    data: (tag) => ({
+      memberId: new Types.ObjectId(),
+      type: 'deduction',
+      amount: 100,
+      balanceAfter: 0,
+      reason: 'test',
+      idempotencyKey: `k-${tag}`,
+    }),
+    update: { reason: 'changed' },
   },
   {
     model: AuditLogModel,

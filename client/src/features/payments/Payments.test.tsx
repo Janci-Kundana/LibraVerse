@@ -178,7 +178,7 @@ describe('counter payment (FR-17)', () => {
 describe('public pay link', () => {
   it('shows what is being paid and opens checkout', async () => {
     mockApi({
-      'GET /api/pay/tok123': {
+      'POST /api/pay/tok123/verify': {
         status: 200,
         body: {
           paymentId: 'p1',

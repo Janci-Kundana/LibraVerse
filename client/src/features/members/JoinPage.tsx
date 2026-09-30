@@ -88,6 +88,7 @@ function JoinForm({
 }) {
   const [form, setForm] = useState({ name: '', email: '', password: '', phone: '' });
   const [file, setFile] = useState<File | null>(null);
+  const [photo, setPhoto] = useState<File | null>(null);
   const [accept, setAccept] = useState(false);
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
@@ -109,6 +110,7 @@ function JoinForm({
         ...form,
         phone: form.phone || undefined,
         idProof: await readFileAsDataUrl(file),
+        ...(photo ? { photo: await readFileAsDataUrl(photo) } : {}),
         acceptTerms: accept,
       });
       if (res.status === 'ok') {
@@ -171,6 +173,19 @@ function JoinForm({
           <span className="mt-1 block text-xs text-gray-500">
             Aadhaar, college ID, driving licence… JPG, PNG, WebP or PDF, up to 5 MB. Only this
             library’s staff can see it.
+          </span>
+        </label>
+        <label className="block">
+          <span className="text-sm text-gray-300">Card photo (optional)</span>
+          <input
+            type="file"
+            accept="image/jpeg,image/png,image/webp"
+            aria-label="Card photo"
+            onChange={(e) => setPhoto(e.target.files?.[0] ?? null)}
+            className="mt-1 block w-full text-sm text-gray-300 file:mr-3 file:rounded-lg file:border-0 file:bg-gray-800 file:px-3 file:py-2 file:text-gray-100"
+          />
+          <span className="mt-1 block text-xs text-gray-500">
+            A clear photo of your face for your membership card. You can add it later too.
           </span>
         </label>
         <label className="flex items-start gap-2 text-sm text-gray-300">

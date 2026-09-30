@@ -3,6 +3,7 @@ import { NavLink, Outlet, useNavigate } from 'react-router';
 import { isStaff, type Role } from '@libraverse/shared';
 import { useLogout, useMe } from '../auth/useAuth';
 import { NotificationBell } from './NotificationBell';
+import { MembershipCelebration } from '../card/Celebration';
 
 interface NavItem {
   to: string;
@@ -21,6 +22,7 @@ const NAV: Record<Role, NavItem[]> = {
     { to: '/library', label: 'Dashboard' },
     { to: '/library/counter', label: 'Counter' },
     { to: '/library/loans', label: 'Loans' },
+    { to: '/library/members', label: 'Members' },
     { to: '/library/payments', label: 'Payments' },
     { to: '/library/reservations', label: 'Reservations' },
     { to: '/library/verifications', label: 'ID verification' },
@@ -40,6 +42,7 @@ const NAV: Record<Role, NavItem[]> = {
     { to: '/library', label: 'Dashboard' },
     { to: '/library/counter', label: 'Counter' },
     { to: '/library/loans', label: 'Loans' },
+    { to: '/library/members', label: 'Members' },
     { to: '/library/reservations', label: 'Reservations' },
     { to: '/library/verifications', label: 'ID verification' },
     { to: '/library/catalog', label: 'Catalog' },
@@ -112,6 +115,7 @@ export function DashboardLayout() {
         </header>
         <main className="px-4 py-6 md:px-8">
           <Outlet />
+          {user.role === 'member' && <MembershipCelebration />}
         </main>
       </div>
     </div>

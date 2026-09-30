@@ -50,3 +50,48 @@ export function decide(decision: 'approve' | 'reject'): RequestHandler {
     );
   };
 }
+
+async function sendFile(
+  res: Parameters<RequestHandler>[1],
+  file: Awaited<ReturnType<typeof members.openMyPhoto>>,
+) {
+  res.set('Cache-Control', 'no-store, private');
+  if ('redirect' in file) {
+    res.redirect(302, file.redirect);
+    return;
+  }
+  res.type(file.mime).send(file.data);
+}
+
+export const setPhoto: RequestHandler = async (req, res) => {
+  res.json(await members.setPhoto(req.auth!.userId, req.body.photo));
+};
+
+export const myPhoto: RequestHandler = async (req, res) => {
+  await sendFile(res, await members.openMyPhoto(req.auth!.userId));
+};
+
+export const memberPhoto: RequestHandler = async (req, res) => {
+  await sendFile(res, await members.openMemberPhoto(String(req.params.profileId)));
+};
+
+export const myStanding: RequestHandler = async (req, res) => {
+  res.json(await members.myStanding(libraryOf(req), req.auth!.userId));
+};
+
+export const celebration: RequestHandler = async (req, res) => {
+  res.json({ celebration: await members.pendingCelebration(req.auth!.userId) });
+};
+
+export const celebrationSeen: RequestHandler = async (req, res) => {
+  await members.celebrationSeen(req.auth!.userId, String(req.params.paymentId));
+  res.status(204).end();
+};
+
+export const listMembers: RequestHandler = async (req, res) => {
+  res.json(
+    await members.listMembers(
+      typeof req.query.q === 'string' ? req.query.q.slice(0, 100) : undefined,
+    ),
+  );
+};

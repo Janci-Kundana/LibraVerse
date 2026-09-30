@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
 import { useMutation } from '@tanstack/react-query';
 import type { LoanDto, MemberScanDto, ReturnResultDto } from '@libraverse/shared';
 import { QrScanner } from '../../components/QrScanner';
@@ -34,12 +34,37 @@ export function CounterPage() {
   );
 }
 
-const MEMBERSHIP_TONE = {
+const CARD_TONE = {
   active: 'green',
   expired: 'red',
+  blocked: 'red',
   none: 'yellow',
   unverified: 'yellow',
 } as const;
+const CARD_LABEL = {
+  active: 'Active',
+  expired: 'Expired',
+  blocked: 'Blocked',
+  none: 'No plan',
+  unverified: 'ID not verified',
+} as const;
+const DUE_LABEL = {
+  none: '',
+  paid: '',
+  pending: 'Due pending',
+  deductionScheduled: 'Deposit deduction scheduled',
+  deducted: 'Deducted from deposit',
+  blocked: 'Deposit exhausted',
+} as const;
+
+function Detail({ label, children }: { label: string; children: ReactNode }) {
+  return (
+    <div className="min-w-0">
+      <dt className="text-xs text-gray-500">{label}</dt>
+      <dd className="truncate text-gray-200">{children}</dd>
+    </div>
+  );
+}
 
 function IssuePanel() {
   const [token, setToken] = useState<string | null>(null);
@@ -79,22 +104,54 @@ function IssuePanel() {
 
       {m && (
         <Card>
-          <div className="flex flex-wrap items-start justify-between gap-2">
-            <div>
-              <p className="text-lg font-medium">{m.name}</p>
-              <p className="text-sm text-gray-400">
-                {m.membershipNo
-                  ? `No. ${m.membershipNo.replace(/(\d{4})(?=\d)/g, '$1 ')}`
-                  : 'No membership number'}{' '}
-                · {m.planName ?? 'no plan'}
-                {m.validTill ? ` · valid till ${formatDate(m.validTill)}` : ''}
-              </p>
+          <div className="flex flex-wrap items-start gap-4">
+            {m.photoUrl ? (
+              <img
+                src={m.photoUrl}
+                alt={`Photo of ${m.name}`}
+                className="h-28 w-24 rounded-lg object-cover"
+              />
+            ) : (
+              <div
+                aria-hidden
+                className="grid h-28 w-24 place-items-center rounded-lg bg-gray-800 text-3xl font-semibold text-gray-400"
+              >
+                {m.name.trim()[0]?.toUpperCase()}
+              </div>
+            )}
+            <div className="min-w-0 flex-1">
+              <div className="flex flex-wrap items-center gap-2">
+                <p className="text-lg font-medium">{m.name}</p>
+                <StatusPill tone={CARD_TONE[m.cardStatus]}>{CARD_LABEL[m.cardStatus]}</StatusPill>
+                {m.dueStatus !== 'none' && m.dueStatus !== 'paid' && (
+                  <StatusPill
+                    tone={
+                      m.dueStatus === 'blocked' || m.dueStatus === 'deductionScheduled'
+                        ? 'red'
+                        : 'yellow'
+                    }
+                  >
+                    {DUE_LABEL[m.dueStatus]}
+                  </StatusPill>
+                )}
+              </div>
+              <dl className="mt-2 grid grid-cols-2 gap-x-4 gap-y-1 text-sm sm:grid-cols-3">
+                <Detail label="Card no.">
+                  {m.membershipNo ? m.membershipNo.replace(/(\d{4})(?=\d)/g, '$1 ') : '—'}
+                </Detail>
+                <Detail label="Contact">{m.phone ?? '—'}</Detail>
+                <Detail label="Library">{m.libraryName}</Detail>
+                <Detail label="Plan">{m.planName ?? 'No plan'}</Detail>
+                <Detail label="Card issued">{formatDate(m.cardIssuedAt)}</Detail>
+                <Detail label="Valid till">{formatDate(m.validTill)}</Detail>
+                <Detail label="Dues">{rupees(m.pendingDues)}</Detail>
+                <Detail label="Deposit">{rupees(m.depositBalance)}</Detail>
+                <Detail label="Books">
+                  {m.activeLoans.length} of {m.bookLimit}
+                </Detail>
+              </dl>
             </div>
-            <StatusPill tone={MEMBERSHIP_TONE[m.membershipStatus]}>{m.membershipStatus}</StatusPill>
           </div>
-          <p className="mt-2 text-sm text-gray-300">
-            {m.activeLoans.length} of {m.bookLimit} books borrowed · dues {rupees(m.pendingDues)}
-          </p>
           {m.blockedReason ? (
             <p
               role="alert"

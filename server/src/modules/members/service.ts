@@ -1,7 +1,10 @@
 import { randomInt } from 'node:crypto';
 import { Types } from 'mongoose';
 import type {
+  CelebrationDto,
   MemberProfileDto,
+  MemberRowDto,
+  MemberStandingDto,
   Role,
   VerificationItemDto,
   VerificationStatus,
@@ -14,7 +17,10 @@ import { runWithTenant } from '../../core/tenant';
 import { recordAudit } from '../audit/service';
 import { hashPassword, startSession, toAuthUser } from '../auth/service';
 import { currentLimits } from '../billing/service';
+import { circulationSettings } from '../circulation/rules';
+import { depositHistory, outstandingDues, standing } from '../dues/service';
 import { LibraryModel } from '../libraries/model';
+import { PaymentModel } from '../payments/model';
 import { MembershipPlanModel } from '../membershipPlans/model';
 import { UserModel } from '../users/model';
 import { MemberProfileModel, type MemberProfile } from './model';
@@ -76,9 +82,17 @@ export async function joinLibrary(input: JoinInput) {
         throw new AppError(409, 'EMAIL_TAKEN', 'This email already has an account here');
       throw err;
     }
+    const photo = input.photo
+      ? await putFile(
+          decodeDataUrl(input.photo, { allowed: PHOTO_TYPES, maxBytes: 2 * 1024 * 1024 }),
+          `photos/${String(library._id)}`,
+          'private',
+        )
+      : null;
     await MemberProfileModel.create({
       userId: user._id,
       phone: input.phone ?? null,
+      photoKey: photo?.key ?? null,
       idProofKey: stored.key,
       termsAcceptedAt: new Date(),
     });
@@ -108,6 +122,137 @@ export async function toProfileDto(
     walletBalance: p.walletBalance,
     badges: p.badges,
   };
+}
+
+const PHOTO_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
+
+/** Profile picture: private, shown on the card and to this library's staff. */
+export async function setPhoto(userId: string, dataUrl: string) {
+  const profile = await profileFor(userId);
+  const file = decodeDataUrl(dataUrl, { allowed: PHOTO_TYPES, maxBytes: 2 * 1024 * 1024 });
+  const stored = await putFile(file, `photos/${String(profile.libraryId)}`, 'private');
+  profile.photoKey = stored.key;
+  await profile.save();
+  return toProfileDto(profile);
+}
+
+export async function openMyPhoto(userId: string) {
+  const profile = await profileFor(userId);
+  if (!profile.photoKey) throw notFound('Photo');
+  return openFile(profile.photoKey);
+}
+
+export async function openMemberPhoto(profileId: string) {
+  const profile = await MemberProfileModel.findById(parseId(profileId, 'Member'))
+    .select('photoKey')
+    .lean();
+  if (!profile?.photoKey) throw notFound('Photo');
+  return openFile(profile.photoKey);
+}
+
+/** Deposit, dues and the reminder cycle, as the member sees them. */
+export async function myStanding(libraryId: string, userId: string): Promise<MemberStandingDto> {
+  const profile = await profileFor(userId);
+  const memberId = new Types.ObjectId(userId);
+  const due = await outstandingDues(memberId);
+  const { cardStatus, dueStatus } = standing(profile, due);
+  const { depositAmount } = await circulationSettings(libraryId);
+  return {
+    cardStatus,
+    dueStatus,
+    outstandingDues: due,
+    depositBalance: profile.depositBalance ?? 0,
+    depositAmount,
+    warningsSent: profile.dues?.warningsSent ?? 0,
+    deductionScheduledFor: profile.dues?.deductionScheduledFor?.toISOString() ?? null,
+    history: await depositHistory(memberId),
+  };
+}
+
+/** The membership to celebrate once, only after a confirmed payment. */
+export async function pendingCelebration(userId: string): Promise<CelebrationDto | null> {
+  const profile = await profileFor(userId);
+  if (!profile.celebratePaymentId) return null;
+  const payment = await PaymentModel.findOne({
+    _id: profile.celebratePaymentId,
+    status: 'success',
+    purpose: 'membership',
+  }).lean();
+  if (!payment) return null;
+  const plan = payment.planId
+    ? await MembershipPlanModel.findById(payment.planId).select('name').lean()
+    : null;
+  const earlier = await PaymentModel.countDocuments({
+    memberId: payment.memberId,
+    purpose: 'membership',
+    status: 'success',
+    _id: { $ne: payment._id },
+    paidAt: { $lt: payment.paidAt ?? new Date() },
+  });
+  return {
+    paymentId: String(payment._id),
+    planName: plan?.name ?? 'Membership',
+    tier: profile.cardTier,
+    validTill: profile.validTill ? profile.validTill.toISOString() : null,
+    amount: payment.amount,
+    depositCollected: payment.depositAmount ?? 0,
+    renewal: earlier > 0,
+  };
+}
+
+export async function celebrationSeen(userId: string, paymentId: string) {
+  await MemberProfileModel.updateOne(
+    { userId: new Types.ObjectId(userId), celebratePaymentId: parseId(paymentId, 'Payment') },
+    { $set: { celebratePaymentId: null } },
+  );
+}
+
+/** Staff: members with their standing (dues, deposit, card status). */
+export async function listMembers(q?: string) {
+  const userFilter: Record<string, unknown> = { role: 'member' };
+  if (q) {
+    const rx = { $regex: q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), $options: 'i' };
+    userFilter.$or = [{ name: rx }, { email: rx }];
+  }
+  const users = await UserModel.find(userFilter)
+    .select('name email status')
+    .sort({ name: 1 })
+    .limit(300)
+    .lean();
+  const profiles = await MemberProfileModel.find({
+    userId: { $in: users.map((u) => u._id) },
+  }).lean();
+  const plans = await MembershipPlanModel.find({
+    _id: { $in: profiles.map((p) => p.planId).filter(Boolean) },
+  })
+    .select('name')
+    .lean();
+  const planName = new Map(plans.map((p) => [String(p._id), p.name]));
+  const byUser = new Map(profiles.map((p) => [String(p.userId), p]));
+  const rows: MemberRowDto[] = [];
+  for (const u of users) {
+    const p = byUser.get(String(u._id));
+    if (!p) continue;
+    const due = await outstandingDues(u._id);
+    const s = standing(p, due);
+    rows.push({
+      profileId: String(p._id),
+      name: u.name,
+      email: u.email,
+      phone: p.phone ?? null,
+      accountStatus: u.status,
+      verificationStatus: p.verificationStatus,
+      membershipNo: p.membershipNo ?? null,
+      planName: p.planId ? (planName.get(String(p.planId)) ?? null) : null,
+      validTill: p.validTill ? p.validTill.toISOString() : null,
+      outstandingDues: due,
+      depositBalance: p.depositBalance ?? 0,
+      cardStatus: s.cardStatus,
+      dueStatus: s.dueStatus,
+      hasPhoto: p.photoKey != null,
+    });
+  }
+  return rows;
 }
 
 export async function getMyProfile(userId: string) {

@@ -22,6 +22,9 @@ export async function circulationSettings(libraryId: string) {
     maxRenewals: lib?.circulation?.maxRenewals ?? 2,
     holdDays: lib?.circulation?.holdDays ?? 3,
     lostBookCharge: lib?.circulation?.lostBookCharge ?? 50_000,
+    depositAmount: lib?.circulation?.depositAmount ?? 50_000,
+    warningIntervalDays: lib?.circulation?.warningIntervalDays ?? 3,
+    deductionGraceDays: lib?.circulation?.deductionGraceDays ?? 4,
   };
 }
 

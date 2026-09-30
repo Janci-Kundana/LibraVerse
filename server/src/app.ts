@@ -25,7 +25,12 @@ import { circulationRoutes, memberCirculationRoutes } from './modules/circulatio
 import { couponRoutes } from './modules/coupons/routes';
 import { fileRoutes } from './modules/files/routes';
 import { librarySettingsRoutes, publicLibraryRoutes } from './modules/librarySettings/routes';
-import { joinRoutes, memberRoutes, verificationRoutes } from './modules/members/routes';
+import {
+  joinRoutes,
+  memberRoutes,
+  staffMemberRoutes,
+  verificationRoutes,
+} from './modules/members/routes';
 import { membershipPlanRoutes } from './modules/membershipPlans/routes';
 import {
   memberPaymentRoutes,
@@ -37,7 +42,12 @@ import {
 import { staffRoutes } from './modules/staff/routes';
 
 // Routes that accept files (as data URLs) or CSV get a larger body limit.
-const UPLOAD_PATHS = ['/api/members/join', '/api/member/id-proof', '/api/library/settings'];
+const UPLOAD_PATHS = [
+  '/api/members/join',
+  '/api/member/id-proof',
+  '/api/member/photo',
+  '/api/library/settings',
+];
 const isUpload = (path: string) => UPLOAD_PATHS.includes(path) || path.startsWith('/api/books');
 
 export function createApp() {
@@ -79,6 +89,7 @@ export function createApp() {
   app.use('/api/membership-plans', membershipPlanRoutes);
   app.use('/api/coupons', couponRoutes);
   app.use('/api/members', joinRoutes);
+  app.use('/api/members', staffMemberRoutes);
   app.use('/api/books', bookRoutes);
   app.use('/api/copies', copyRoutes);
   app.use('/api/member/catalog', catalogRoutes);

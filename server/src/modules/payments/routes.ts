@@ -31,6 +31,7 @@ staffPaymentRoutes.use(authenticate, requireRole('librarian'));
 staffPaymentRoutes.get('/', c.list);
 staffPaymentRoutes.post('/counter', validateBody(counterBody), c.counter);
 staffPaymentRoutes.get('/:id', c.get);
+staffPaymentRoutes.post('/:id/verify', c.staffVerify);
 staffPaymentRoutes.get('/:id/receipt.pdf', c.receipt);
 staffPaymentRoutes.post(
   '/:id/refund',
@@ -46,8 +47,11 @@ memberPaymentRoutes.get('/', c.myList);
 memberPaymentRoutes.post('/', validateBody(chargeBody), c.checkout);
 memberPaymentRoutes.get('/:id', c.myPayment);
 memberPaymentRoutes.post('/:id/opened', c.opened);
+memberPaymentRoutes.post('/:id/verify', c.verify);
+memberPaymentRoutes.post('/:id/cancel', c.cancel);
 memberPaymentRoutes.get('/:id/receipt.pdf', c.myReceipt);
 
 export const publicPayRoutes = Router();
 publicPayRoutes.get('/:token', c.publicPay);
 publicPayRoutes.post('/:token/opened', c.publicPayOpened);
+publicPayRoutes.post('/:token/verify', c.publicPayVerify);

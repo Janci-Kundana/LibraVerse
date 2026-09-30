@@ -210,7 +210,7 @@ describe('returns (FR-16)', () => {
     expect(mine.body.pendingDues).toBe(1500);
     expect(testOutbox.at(-1)).toMatchObject({
       to: 'reader@city.test',
-      subject: 'A charge of ₹15 was added to your account',
+      subject: 'First reminder: ₹15 unpaid at Library city',
     });
 
     await runWithTenant(lib.id, async () => {
@@ -377,7 +377,7 @@ describe('reservations', () => {
 });
 
 describe('member card and loans', () => {
-  it('the card’s QR token is accepted at the counter; dues show the card as blocked', async () => {
+  it('the card’s QR token is accepted at the counter; an overdue book does not block the card', async () => {
     const { lib, staff, codes } = await setup();
     const m = await activeMember(app, lib.id, 'reader@city.test');
     const card = await m.agent.get('/api/member/card');
@@ -393,7 +393,8 @@ describe('member card and loans', () => {
       await staff.post('/api/circulation/issue').send({ memberToken: m.token, copyCode: codes[0] })
     ).body;
     await backdate(lib.id, loan.id, 2);
-    expect((await m.agent.get('/api/member/card')).body.status).toBe('blocked');
+    // Only an exhausted deposit with dues still owed blocks the card (borrowing is still refused).
+    expect((await m.agent.get('/api/member/card')).body.status).toBe('active');
 
     await m.agent.post('/api/member/card/revealed');
     expect((await m.agent.get('/api/member/card')).body.revealed).toBe(true);

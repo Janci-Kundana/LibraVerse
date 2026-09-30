@@ -23,6 +23,31 @@ const memberProfileSchema = new Schema(
     cardRevealedAt: { type: Date, default: null },
     expiryReminderAt: { type: Date, default: null },
     walletBalance: { type: Number, default: 0 }, // paise
+    photoKey: { type: String, default: null }, // private profile picture; shown on the card and to staff
+    currentPeriodStart: { type: Date, default: null }, // start of the latest paid membership
+    // Refundable security deposit (paise). Never negative: every write goes
+    // through dues/service.ts, which guards the update with depositBalance >= amount.
+    depositBalance: { type: Number, default: 0, min: 0 },
+    depositCollectedAt: { type: Date, default: null },
+    // Current unpaid-dues cycle (warnings → notice → deduction). Reset when dues reach 0.
+    dues: {
+      type: new Schema(
+        {
+          since: { type: Date, default: null },
+          warningsSent: { type: Number, default: 0 },
+          lastWarningAt: { type: Date, default: null },
+          deductionScheduledFor: { type: Date, default: null },
+          noticeSentAt: { type: Date, default: null },
+          lastDeductionKey: { type: String, default: null },
+          lastDeductionAt: { type: Date, default: null },
+          lastResolution: { type: String, enum: ['payment', 'deduction', null], default: null },
+        },
+        { _id: false },
+      ),
+      default: () => ({}),
+    },
+    // A confirmed membership payment the member has not yet seen celebrated.
+    celebratePaymentId: { type: Schema.Types.ObjectId, ref: 'Payment', default: null },
     badges: { type: [String], default: [] },
     wishlist: { type: [Schema.Types.ObjectId], ref: 'Book', default: [] },
   },

@@ -3,6 +3,7 @@ import { runAsSystem } from '../core/tenant';
 import { LibraryModel } from '../modules/libraries/model';
 import { expireReservationHolds, sendExpiryReminders, sendLoanReminders } from './circulation';
 import { expireLapsedPro, expireUnpaid } from './payments';
+import { processDues } from '../modules/dues/service';
 import { expirePlatformPayments } from '../modules/billing/service';
 
 type PerLibraryJob = (libraryId: string, now: Date) => Promise<unknown>;
@@ -28,6 +29,8 @@ const jobs: { name: string; schedule: string; run: PerLibraryJob }[] = [
   { name: 'reservation-holds', schedule: '0 * * * *', run: expireReservationHolds }, // hourly
   { name: 'payment-expiry', schedule: '* * * * *', run: expireUnpaid }, // every minute
   { name: 'pro-expiry', schedule: '30 0 * * *', run: expireLapsedPro }, // daily 00:30
+  // Due warnings, day-before notices and deposit deductions (daily 10:00).
+  { name: 'dues', schedule: '0 10 * * *', run: (id, now) => processDues(id, now) },
 ];
 
 export function registerJob(name: string, schedule: string, run: PerLibraryJob) {

@@ -126,7 +126,7 @@ function CounterQr({
   const [status] = usePaymentStatus(
     request.payment.id,
     request.payment.status,
-    `/api/payments/${request.payment.id}`,
+    `/api/payments/${request.payment.id}/verify`,
   );
   const left = useCountdown(request.payment.expiresAt);
   if (status === 'success') {
@@ -373,7 +373,8 @@ export function PublicPayPage() {
   const { token } = useParams();
   const info = useQuery({
     queryKey: ['pay', token],
-    queryFn: () => api<PublicPayDto>(`/api/pay/${token}`),
+    // The server checks with Razorpay on every refresh (no webhook needed).
+    queryFn: () => post<PublicPayDto>(`/api/pay/${token}/verify`),
     refetchInterval: 5000,
   });
   const left = useCountdown(info.data?.expiresAt ?? null);
@@ -388,7 +389,7 @@ export function PublicPayPage() {
         name: d.libraryName,
         description: d.description,
         timeout: Math.max(60, left),
-        handler: () => {},
+        handler: () => void info.refetch(),
       });
     },
   });

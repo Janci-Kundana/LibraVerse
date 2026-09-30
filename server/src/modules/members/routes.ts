@@ -5,7 +5,7 @@ import { authenticate, requireRole } from '../auth/middleware';
 import * as plans from '../membershipPlans/controller';
 import * as c from './controller';
 import { requireVerifiedMember } from './middleware';
-import { joinBody, rejectBody, resubmitIdBody } from './validation';
+import { joinBody, photoBody, rejectBody, resubmitIdBody } from './validation';
 
 /** Public sign-up (FR-02). */
 export const joinRoutes = Router();
@@ -16,9 +16,19 @@ export const memberRoutes = Router();
 memberRoutes.use(authenticate, requireRole('member'));
 memberRoutes.get('/profile', c.myProfile);
 memberRoutes.post('/id-proof', validateBody(resubmitIdBody), c.resubmitId);
+memberRoutes.post('/photo', validateBody(photoBody), c.setPhoto);
+memberRoutes.get('/photo', c.myPhoto);
 // Everything below needs an approved ID.
 memberRoutes.use(requireVerifiedMember);
 memberRoutes.get('/plans', plans.listActive);
+memberRoutes.get('/standing', c.myStanding);
+memberRoutes.get('/celebration', c.celebration);
+memberRoutes.post('/celebration/:paymentId/seen', c.celebrationSeen);
+
+/** Staff: members with standing, and their photos. Mounted at /api/members. */
+export const staffMemberRoutes = Router();
+staffMemberRoutes.get('/', authenticate, requireRole('librarian'), c.listMembers);
+staffMemberRoutes.get('/:profileId/photo', authenticate, requireRole('librarian'), c.memberPhoto);
 
 /** Librarian ID-verification queue (FR-13). */
 export const verificationRoutes = Router();

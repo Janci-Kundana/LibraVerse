@@ -30,6 +30,9 @@ function SettingsForm({ settings: s }: { settings: LibrarySettingsDto }) {
     maxRenewals: String(s.circulation.maxRenewals),
     holdDays: String(s.circulation.holdDays),
     lostBookCharge: String(s.circulation.lostBookCharge / 100),
+    depositAmount: String(s.circulation.depositAmount / 100),
+    warningIntervalDays: String(s.circulation.warningIntervalDays),
+    deductionGraceDays: String(s.circulation.deductionGraceDays),
   });
 
   const save = useMutation({
@@ -42,6 +45,9 @@ function SettingsForm({ settings: s }: { settings: LibrarySettingsDto }) {
           maxRenewals: Number(circ.maxRenewals),
           holdDays: Number(circ.holdDays),
           lostBookCharge: toPaise(circ.lostBookCharge),
+          depositAmount: toPaise(circ.depositAmount),
+          warningIntervalDays: Number(circ.warningIntervalDays),
+          deductionGraceDays: Number(circ.deductionGraceDays),
         },
         ...(logo ? { logo: await readFileAsDataUrl(logo) } : {}),
       }),
@@ -107,6 +113,39 @@ function SettingsForm({ settings: s }: { settings: LibrarySettingsDto }) {
                 />
               ))}
             </div>
+          </fieldset>
+          <fieldset className="grid gap-3 sm:grid-cols-3">
+            <legend className="mb-2 text-sm text-gray-300">Security deposit and unpaid dues</legend>
+            <Field
+              label="Deposit (₹, same for every member)"
+              type="number"
+              min="1"
+              step="0.01"
+              required
+              value={circ.depositAmount}
+              onChange={(e) => setCirc({ ...circ, depositAmount: e.target.value })}
+            />
+            <Field
+              label="Days between due reminders"
+              type="number"
+              min="1"
+              max="30"
+              value={circ.warningIntervalDays}
+              onChange={(e) => setCirc({ ...circ, warningIntervalDays: e.target.value })}
+            />
+            <Field
+              label="Days after 3rd reminder to deduct"
+              type="number"
+              min="2"
+              max="60"
+              value={circ.deductionGraceDays}
+              onChange={(e) => setCirc({ ...circ, deductionGraceDays: e.target.value })}
+            />
+            <p className="text-xs text-gray-500 sm:col-span-3">
+              Collected with each member’s first membership. Dues left unpaid after three reminders
+              are deducted from it (never below ₹0); if it runs out while dues remain, the card is
+              blocked until they are paid.
+            </p>
           </fieldset>
           <fieldset className="grid gap-3 sm:grid-cols-2">
             <legend className="mb-2 text-sm text-gray-300">Borrowing rules</legend>

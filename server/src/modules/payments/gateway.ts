@@ -19,6 +19,18 @@ export interface Gateway {
     amount: number,
     notes: Record<string, string>,
   ): Promise<{ id: string }>;
+  /** Server-to-server: the payment attempts on an order, straight from Razorpay. */
+  fetchOrderPayments(orderId: string): Promise<GatewayPayment[]>;
+}
+
+export interface GatewayPayment {
+  id: string;
+  /** created | authorized | captured | refunded | failed */
+  status: string;
+  amount: number;
+  /** when Razorpay created the payment attempt */
+  createdAt: Date | null;
+  errorDescription: string | null;
 }
 
 export interface Credentials {
@@ -37,6 +49,16 @@ function razorpayGateway({ keyId, keySecret }: Credentials): Gateway {
     async refund(paymentId, amount, notes) {
       const refund = await client.payments.refund(paymentId, { amount, notes });
       return { id: refund.id };
+    },
+    async fetchOrderPayments(orderId) {
+      const res = await client.orders.fetchPayments(orderId);
+      return (res.items ?? []).map((p) => ({
+        id: p.id,
+        status: String(p.status),
+        amount: Number(p.amount),
+        createdAt: p.created_at ? new Date(Number(p.created_at) * 1000) : null,
+        errorDescription: (p.error_description as string | null | undefined) ?? null,
+      }));
     },
   };
 }

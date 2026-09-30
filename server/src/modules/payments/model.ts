@@ -12,6 +12,8 @@ const paymentSchema = new Schema(
     method: { type: String, enum: PAYMENT_METHODS, required: true },
     amount: { type: Number, required: true, min: 1 }, // paise, what is charged
     discount: { type: Number, default: 0 },
+    // Part of `amount` that tops the member's security deposit up (membership only).
+    depositAmount: { type: Number, default: 0, min: 0 },
     couponCode: { type: String, default: null },
     planId: { type: Schema.Types.ObjectId, ref: 'MembershipPlan', default: null },
     loanIds: { type: [Schema.Types.ObjectId], default: [] },

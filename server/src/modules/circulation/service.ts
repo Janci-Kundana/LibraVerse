@@ -2,7 +2,6 @@ import { Types } from 'mongoose';
 import type { LoanDto, MemberScanDto, ReturnResultDto, Role } from '@libraverse/shared';
 import { AppError } from '../../core/errors';
 import { isDuplicateKey, notFound, parseId } from '../../core/ids';
-import { notify } from '../../core/notify';
 import { recordAudit } from '../audit/service';
 import { BookModel } from '../books/model';
 import { verifyCardToken } from '../card/token';
@@ -13,6 +12,7 @@ import { MembershipPlanModel } from '../membershipPlans/model';
 import { ReservationModel } from '../reservations/model';
 import { holdCopyForNextReservation } from '../reservations/service';
 import { UserModel } from '../users/model';
+import { onDueCreated, outstandingDues, standing } from '../dues/service';
 import { DAY_MS, circulationSettings, membershipStatus, overdueDays, rupees } from './rules';
 
 export { DAY_MS, circulationSettings, membershipStatus, overdueDays, rupees };
@@ -23,14 +23,8 @@ type LoanDoc = Loan & { _id: Types.ObjectId };
 // FR-15/16/22: issue, return, renew. Runs in the librarian's (or member's)
 // tenant context. Money in paise.
 
-/** Unpaid late fines plus lost/damage charges on returned or lost loans. */
-export async function pendingDues(memberId: Types.ObjectId): Promise<number> {
-  const [row] = await LoanModel.aggregate<{ total: number }>([
-    { $match: { memberId, duesPaidAt: null, status: { $in: ['returned', 'lost'] } } },
-    { $group: { _id: null, total: { $sum: { $add: ['$fineAmount', '$damageCharge'] } } } },
-  ]);
-  return row?.total ?? 0;
-}
+/** Unpaid late fines plus lost/damage charges, minus anything already paid. */
+export const pendingDues = outstandingDues;
 
 export async function toLoanDtos(loans: LoanDoc[], now = new Date()): Promise<LoanDto[]> {
   const [books, copies, users] = await Promise.all([
@@ -65,23 +59,44 @@ export async function toLoanDtos(loans: LoanDoc[], now = new Date()): Promise<Lo
       // An active loan shows the fine it would carry if returned now.
       fineAmount: l.status === 'active' ? late * l.finePerDay : l.fineAmount,
       damageCharge: l.damageCharge,
+      duesPaidAmount: l.duesPaidAmount ?? 0,
       chargeNote: l.chargeNote ?? null,
       duesPaid: l.duesPaidAt != null,
     };
   });
 }
 
-async function memberSummary(memberId: Types.ObjectId, now = new Date()): Promise<MemberScanDto> {
+async function memberSummary(
+  libraryId: string,
+  memberId: Types.ObjectId,
+  now = new Date(),
+): Promise<MemberScanDto> {
+  // Always the latest data from the database; the QR only carries ids + signature.
   const user = await UserModel.findOne({ _id: memberId, role: 'member' })
     .select('name email status')
     .lean();
   const profile = await MemberProfileModel.findOne({ userId: memberId }).lean();
-  if (!user || !profile) throw notFound('Member');
+  if (!user || !profile) {
+    throw new AppError(
+      404,
+      'UNKNOWN_CARD',
+      'Unknown card: no member with this card in this library',
+    );
+  }
+  if (user.status !== 'active') {
+    throw new AppError(
+      409,
+      'MEMBER_INACTIVE',
+      `${user.name}'s account is deactivated. This card cannot be used.`,
+    );
+  }
+  const { libraryName } = await circulationSettings(libraryId);
 
   const plan = profile.planId ? await MembershipPlanModel.findById(profile.planId).lean() : null;
   const loans = await LoanModel.find({ memberId, status: 'active' }).sort({ dueAt: 1 }).lean();
   const dues = await pendingDues(memberId);
   const status = membershipStatus(profile, now);
+  const { cardStatus, dueStatus } = standing(profile, dues, now);
   const overdue = loans.filter((l) => l.dueAt < now).length;
   const bookLimit = plan?.bookLimit ?? 0;
 
@@ -94,11 +109,12 @@ async function memberSummary(memberId: Types.ObjectId, now = new Date()): Promis
     .lean();
 
   let blockedReason: string | null = null;
-  if (user.status !== 'active') blockedReason = 'This account is disabled';
-  else if (status === 'unverified') blockedReason = 'ID proof is not verified yet';
+  if (status === 'unverified') blockedReason = 'ID proof is not verified yet';
   else if (status === 'none') blockedReason = 'No active membership plan';
   else if (status === 'expired')
     blockedReason = `Membership expired on ${profile.validTill!.toLocaleDateString('en-IN')}`;
+  else if (cardStatus === 'blocked')
+    blockedReason = `Card blocked: the deposit is used up and ${rupees(dues)} is still due. Collect it to unblock.`;
   else if (dues > 0)
     blockedReason = `Pending fine of ${rupees(dues)}. Collect payment before issuing.`;
   else if (overdue > 0)
@@ -108,8 +124,19 @@ async function memberSummary(memberId: Types.ObjectId, now = new Date()): Promis
 
   return {
     memberId: String(memberId),
+    profileId: String(profile._id),
     name: user.name,
     email: user.email,
+    phone: profile.phone ?? null,
+    photoUrl: profile.photoKey ? `/api/members/${String(profile._id)}/photo` : null,
+    libraryName,
+    cardIssuedAt: profile.verifiedAt ? profile.verifiedAt.toISOString() : null,
+    membershipStartedAt: profile.currentPeriodStart
+      ? profile.currentPeriodStart.toISOString()
+      : null,
+    depositBalance: profile.depositBalance ?? 0,
+    cardStatus,
+    dueStatus,
     membershipNo: profile.membershipNo ?? null,
     planName: plan?.name ?? null,
     bookLimit,
@@ -128,7 +155,7 @@ async function memberSummary(memberId: Types.ObjectId, now = new Date()): Promis
 
 /** First scan at the counter: whose card is this, and may they borrow? */
 export function scanMember(libraryId: string, token: string) {
-  return memberSummary(new Types.ObjectId(verifyCardToken(token, libraryId)));
+  return memberSummary(libraryId, new Types.ObjectId(verifyCardToken(token, libraryId)));
 }
 
 async function copyByCode(code: string) {
@@ -146,7 +173,7 @@ export async function issue(
 ) {
   const now = new Date();
   const memberId = new Types.ObjectId(verifyCardToken(input.memberToken, libraryId));
-  const summary = await memberSummary(memberId, now);
+  const summary = await memberSummary(libraryId, memberId, now);
   if (!summary.canBorrow) {
     throw new AppError(409, 'BORROW_BLOCKED', summary.blockedReason!, {
       reason: summary.blockedReason,
@@ -226,11 +253,6 @@ export async function copyStatus(code: string) {
   };
 }
 
-async function memberRecipient(libraryId: string, memberId: Types.ObjectId) {
-  const user = await UserModel.findById(memberId).select('email').lean();
-  return user ? { libraryId, userId: String(memberId), email: user.email } : null;
-}
-
 /** FR-16: return a copy; late fines are computed automatically (TC-06). */
 export async function returnCopy(
   libraryId: string,
@@ -275,19 +297,8 @@ export async function returnCopy(
     },
   });
 
-  const owed = loan.fineAmount + loan.damageCharge;
-  if (owed > 0) {
-    const to = await memberRecipient(libraryId, loan.memberId);
-    if (to) {
-      await notify(to, {
-        type: 'loan.fine',
-        subject: `A charge of ${rupees(owed)} was added to your account`,
-        text: `"${dto!.bookTitle}" was returned${late ? ` ${late} day${late > 1 ? 's' : ''} late` : ''}${
-          loan.damageCharge ? ' damaged' : ''
-        }. ${rupees(owed)} is now due. Pay it online in LibraVerse or at the counter.`,
-      });
-    }
-  }
+  // A new due starts the reminder cycle (warning 1 goes out now).
+  if (loan.fineAmount + loan.damageCharge > 0) await onDueCreated(libraryId, loan.memberId, now);
   return { loan: dto!, heldFor };
 }
 
@@ -308,6 +319,7 @@ export async function markLost(libraryId: string, loanId: string, actor: Actor) 
   });
   await loan.save();
   await BookCopyModel.updateOne({ _id: loan.copyId }, { $set: { status: 'lost' } });
+  await onDueCreated(libraryId, loan.memberId, now);
   await recordAudit({
     libraryId,
     actor,

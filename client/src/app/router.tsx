@@ -38,6 +38,7 @@ import { LandingPage } from '../features/landing/LandingPage';
 import { NotFoundPage } from '../features/landing/NotFoundPage';
 import { RegisterLibraryPage } from '../features/libraries/RegisterLibraryPage';
 import { BranchesPage } from '../features/library/BranchesPage';
+import { MembersPage } from '../features/library/MembersPage';
 import { PlansPage } from '../features/library/PlansPage';
 import { SettingsPage } from '../features/library/SettingsPage';
 import { StaffPage } from '../features/library/StaffPage';
@@ -88,6 +89,7 @@ export const routes: RouteObject[] = [
       { index: true, element: <LibraryHome /> },
       { path: 'counter', element: <CounterPage /> },
       { path: 'loans', element: <LoansPage /> },
+      { path: 'members', element: <MembersPage /> },
       { path: 'payments', element: <PaymentsPage /> },
       { path: 'donations', element: <DonationsPage /> },
       { path: 'events', element: <StaffEventsPage /> },

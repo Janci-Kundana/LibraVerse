@@ -84,6 +84,12 @@ export interface CirculationSettings {
   holdDays: number;
   /** paise charged when a borrowed copy is lost */
   lostBookCharge: number;
+  /** security deposit every member pays with their first membership (paise, > 0) */
+  depositAmount: number;
+  /** days between due warnings (3 warnings) */
+  warningIntervalDays: number;
+  /** days after the third warning before the deposit is deducted */
+  deductionGraceDays: number;
 }
 
 export interface LibrarySettingsDto {
@@ -259,6 +265,8 @@ export interface LoanDto {
   /** paise */
   fineAmount: number;
   damageCharge: number;
+  /** paise already paid towards fineAmount + damageCharge (payments or deposit) */
+  duesPaidAmount: number;
   chargeNote: string | null;
   duesPaid: boolean;
 }
@@ -266,8 +274,20 @@ export interface LoanDto {
 /** What the counter sees after scanning a member card (FR-15, TC-05). */
 export interface MemberScanDto {
   memberId: string;
+  profileId: string;
   name: string;
   email: string;
+  phone: string | null;
+  /** staff-only URL of the member's profile picture */
+  photoUrl: string | null;
+  libraryName: string;
+  /** when the card (membership number) was issued */
+  cardIssuedAt: string | null;
+  /** start of the current paid membership */
+  membershipStartedAt: string | null;
+  depositBalance: number;
+  cardStatus: CardStatus;
+  dueStatus: DueStatus;
   membershipNo: string | null;
   planName: string | null;
   bookLimit: number;
@@ -315,6 +335,8 @@ export interface MemberCardDto {
   /** PNG data URL of the QR */
   qrDataUrl: string;
   revealed: boolean;
+  /** GET /api/member/photo returns it */
+  hasPhoto: boolean;
 }
 
 export interface MemberLoansDto {
@@ -390,4 +412,60 @@ export interface PaymentUpdatedEvent {
   amount: number;
   memberId: string;
   memberName: string;
+}
+
+/** Card state derived on the server: expired wins over blocked. */
+export type CardStatus = 'active' | 'expired' | 'blocked' | 'none' | 'unverified';
+
+/** Unpaid-dues state derived on the server (never set by a client). */
+export type DueStatus = 'none' | 'pending' | 'deductionScheduled' | 'deducted' | 'blocked' | 'paid';
+
+export interface DepositTransactionDto {
+  id: string;
+  type: 'collected' | 'deduction';
+  amount: number;
+  balanceAfter: number;
+  dueBefore: number | null;
+  dueAfter: number | null;
+  reason: string;
+  createdAt: string;
+}
+
+export interface MemberStandingDto {
+  cardStatus: CardStatus;
+  dueStatus: DueStatus;
+  outstandingDues: number;
+  depositBalance: number;
+  depositAmount: number;
+  warningsSent: number;
+  deductionScheduledFor: string | null;
+  history: DepositTransactionDto[];
+}
+
+export interface CelebrationDto {
+  paymentId: string;
+  planName: string;
+  tier: CardTier;
+  validTill: string | null;
+  amount: number;
+  depositCollected: number;
+  renewal: boolean;
+}
+
+/** Staff members list row. */
+export interface MemberRowDto {
+  profileId: string;
+  name: string;
+  email: string;
+  phone: string | null;
+  accountStatus: UserStatus;
+  verificationStatus: VerificationStatus;
+  membershipNo: string | null;
+  planName: string | null;
+  validTill: string | null;
+  outstandingDues: number;
+  depositBalance: number;
+  cardStatus: CardStatus;
+  dueStatus: DueStatus;
+  hasPhoto: boolean;
 }

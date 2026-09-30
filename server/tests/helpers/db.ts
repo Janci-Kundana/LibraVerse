@@ -11,7 +11,9 @@ export function useTestDb() {
     await connectDb(`${base}lv-${randomUUID()}`);
     // Build indexes up front so unique constraints hold from the first test.
     await Promise.all(mongoose.modelNames().map((name) => mongoose.model(name).init()));
-  });
+    // Building every collection's indexes on a fresh database is the slow part
+    // of setup (not of any test), and it shares one mongod with other workers.
+  }, 120_000);
 
   afterEach(async () => {
     testOutbox.length = 0;

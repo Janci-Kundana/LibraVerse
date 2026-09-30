@@ -1,11 +1,11 @@
-import { lazy, Suspense, useEffect, useState } from 'react';
+import { lazy, Suspense, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { MemberCardDto } from '@libraverse/shared';
 import { Button, ErrorText, PageHeader, StatusPill } from '../../components/ui';
 import { api, errorMessage, post } from '../../lib/api';
 import { formatDate } from '../../lib/format';
-import { renderFaces } from './cardFaces';
+import { useCardFaces } from './useCardFaces';
 import type { RevealPose } from './reveal';
 
 const CardScene = lazy(() => import('./CardScene').then((m) => ({ default: m.CardScene })));
@@ -20,32 +20,18 @@ export function CardPage() {
     queryKey: CARD_KEY,
     queryFn: () => api<MemberCardDto>('/api/member/card'),
   });
-  const [faces, setFaces] = useState<{ front: HTMLCanvasElement; back: HTMLCanvasElement } | null>(
-    null,
-  );
+  const faces = useCardFaces(card.data);
   const [pose, setPose] = useState<Pick<RevealPose, 'overlay' | 'glow'>>({ overlay: 0, glow: 0 });
-  const [revealing, setRevealing] = useState(false);
-  const [hint, setHint] = useState(false);
+  const [revealDone, setRevealDone] = useState(false);
   const revealed = useMutation({ mutationFn: () => post('/api/member/card/revealed') });
-
-  useEffect(() => {
-    if (!card.data) return;
-    let alive = true;
-    void renderFaces(card.data).then((f) => {
-      if (!alive) return;
-      setFaces(f);
-      setRevealing(!card.data.revealed && card.data.status === 'active');
-      setHint(card.data.revealed);
-    });
-    return () => {
-      alive = false;
-    };
-  }, [card.data]);
+  // The reveal plays once, the first time an active card is shown.
+  const revealing =
+    !revealDone && !!card.data && !card.data.revealed && card.data.status === 'active';
+  const hint = revealDone || !!card.data?.revealed;
 
   function finishReveal() {
-    setRevealing(false);
+    setRevealDone(true);
     setPose({ overlay: 0, glow: 0 });
-    setHint(true);
     revealed.mutate(undefined, {
       onSuccess: () =>
         qc.setQueryData<MemberCardDto>(CARD_KEY, (c) => (c ? { ...c, revealed: true } : c)),

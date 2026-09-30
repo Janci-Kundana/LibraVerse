@@ -21,7 +21,9 @@ const loanSchema = new Schema(
     fineAmount: { type: Number, default: 0 },
     damageCharge: { type: Number, default: 0 },
     chargeNote: { type: String, default: null },
-    duesPaidAt: { type: Date, default: null },
+    // Dues can be settled in parts (a deposit deduction may cover only some).
+    duesPaidAmount: { type: Number, default: 0, min: 0 },
+    duesPaidAt: { type: Date, default: null }, // set once fully paid
     duesPaymentId: { type: Schema.Types.ObjectId, ref: 'Payment', default: null },
     reminders: {
       dueSoonAt: { type: Date, default: null },

@@ -7,6 +7,7 @@ import { formatDate, readFileAsDataUrl, rupees } from '../../lib/format';
 import { HomeShell } from '../dashboard/DashboardLayout';
 import { PayButton } from '../payments/MemberPayments';
 import { NotificationsToggle } from '../dashboard/NotificationsToggle';
+import { PhotoUploader, StandingPanel } from './StandingPanel';
 
 export const PROFILE_KEY = ['member', 'profile'] as const;
 
@@ -42,6 +43,8 @@ export function MemberHome() {
             : 'No active membership plan yet.'}
         </p>
       </Card>
+      <PhotoUploader profile={p} />
+      <StandingPanel />
       <PlanList renewing={Boolean(p.planName)} />
       <section className="mt-8">
         <h2 className="text-lg font-semibold">Notifications</h2>

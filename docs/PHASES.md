@@ -49,6 +49,14 @@ Status: **approved 2026-09-29**. Each phase ends with green tests, run instructi
 - Charts are hand-built SVG (single series, validated brand crimson on the dark surface, hover tooltips, table view) rather than a chart library.
 - Known: `npm audit` reports 2 moderate advisories in `uuid` via exceljs; they affect only callers passing a buffer, which this code never does.
 - Hardening: rate limits on sign-in/OTP/reset (20 per 15 min per IP), public forms (10 per hour per IP) and the AI assistant (30 per hour per member); `trust proxy` in production; malformed JSON is a 400. Production runs the API on Render and the site on Vercel, which rewrites `/api` to Render so cookies stay first-party; Socket.io connects straight to Render with a 5-minute handshake token from `GET /api/auth/socket-token`.
+- **Membership, deposit and dues update (2026-09-30):**
+  - Payments confirm via the verified webhook *or* a server-to-server check of the order with Razorpay (`POST …/verify`, `…/cancel`, and every minute in the expiry job); both use one settle step judged by when Razorpay captured the payment. CLAUDE.md rule 2 updated accordingly.
+  - Security deposit: one library-wide amount (≥ ₹1, default ₹500), charged with the first membership and topped back up at renewal. Stored on `memberProfiles.depositBalance` (min 0); every change is in `depositTransactions` (idempotency key per collection/deduction).
+  - Dues cycle: warning 1 when the due arises (late/damaged/lost), warnings 2 and 3 every `warningIntervalDays` (3), deduction `deductionGraceDays` (4) after warning 3 with a notice the day before (a missed notice postpones by a day). Deduction = min(deposit, due), guarded by `depositBalance >= deduction` and the cycle key, so it never goes negative or runs twice. After return, a due is frozen and never grows.
+  - Standing is derived, never set by a client: card `active | expired | blocked | none | unverified` (expired wins), dues `none | pending | deductionScheduled | deducted | blocked | paid`. Blocked = deposit 0 after a deduction with dues still owed; paying clears it. Borrowing is still refused with any dues or overdue book (TC-05).
+  - Card: front = name, photo, QR, library branding; back = card number, library logo and name (from the member's library record). Profile photos are private (member and that library's staff only).
+  - Celebration shown once after a confirmed membership payment (`celebratePaymentId`).
+  - Pending: how a Library Assistant is assigned to a new member (to be decided with the user).
 - Mongoose is pinned to **v8** (MongoDB driver 6). With Mongoose 9 / driver 7, the connection handshake fails inside Jest's VM sandbox ("Missing required sub-document 'driver' in the client metadata document"), although it works in plain Node. Revisit when upgrading.
 
 ## Progress

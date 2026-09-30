@@ -3,10 +3,8 @@ import { Types } from 'mongoose';
 import type { MemberCardDto } from '@libraverse/shared';
 import { AppError } from '../../core/errors';
 import { notFound } from '../../core/ids';
-import { membershipStatus } from '../circulation/rules';
-import { pendingDues } from '../circulation/service';
+import { outstandingDues, standing } from '../dues/service';
 import { LibraryModel } from '../libraries/model';
-import { LoanModel } from '../loans/model';
 import { MemberProfileModel } from '../members/model';
 import { UserModel } from '../users/model';
 import { cardToken } from './token';
@@ -25,10 +23,8 @@ export async function getCard(libraryId: string, userId: string): Promise<Member
   }
 
   const now = new Date();
-  const status = membershipStatus(profile, now);
-  const blocked =
-    (await pendingDues(memberId)) > 0 ||
-    (await LoanModel.exists({ memberId, status: 'active', dueAt: { $lt: now } })) != null;
+  const { cardStatus } = standing(profile, await outstandingDues(memberId), now);
+  // The QR holds only ids + an HMAC; details are fetched fresh on every scan.
   const qrToken = cardToken(userId, libraryId);
 
   return {
@@ -41,7 +37,8 @@ export async function getCard(libraryId: string, userId: string): Promise<Member
     memberSince: (profile.verifiedAt ?? profile.createdAt).toISOString(),
     validTill: profile.validTill ? profile.validTill.toISOString() : null,
     tier: profile.cardTier,
-    status: status !== 'active' ? 'expired' : blocked ? 'blocked' : 'active',
+    status: cardStatus === 'active' ? 'active' : cardStatus === 'blocked' ? 'blocked' : 'expired',
+    hasPhoto: profile.photoKey != null,
     qrToken,
     qrDataUrl: await QRCode.toDataURL(qrToken, {
       margin: 1,

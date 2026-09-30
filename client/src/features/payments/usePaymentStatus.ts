@@ -1,16 +1,17 @@
 import { useEffect, useState } from 'react';
 import type { PaymentStatus, PaymentUpdatedEvent } from '@libraverse/shared';
-import { api } from '../../lib/api';
+import { post } from '../../lib/api';
 import { getSocket } from '../../lib/socket';
 
 /**
- * Follows one payment live: joins its Socket.io room and, as a fallback,
- * polls every 5 s. `statusUrl` returns an object with `status`.
+ * Follows one payment live: joins its Socket.io room and, as a fallback, every
+ * 5 s asks the server to check with Razorpay (`verifyUrl`, POST). The server
+ * decides; the browser never reports a payment as paid.
  */
 export function usePaymentStatus(
   paymentId: string | null,
   initial: PaymentStatus,
-  statusUrl: string | null,
+  verifyUrl: string | null,
 ) {
   const [status, setStatus] = useState<PaymentStatus>(initial);
 
@@ -25,9 +26,9 @@ export function usePaymentStatus(
     socket.on('connect', join);
     if (socket.connected) join();
 
-    const poll = statusUrl
+    const poll = verifyUrl
       ? setInterval(() => {
-          api<{ status: PaymentStatus }>(statusUrl)
+          post<{ status: PaymentStatus }>(verifyUrl)
             .then((p) => setStatus(p.status))
             .catch(() => {});
         }, 5000)
@@ -38,7 +39,7 @@ export function usePaymentStatus(
       socket.off('connect', join);
       if (poll) clearInterval(poll);
     };
-  }, [paymentId, statusUrl]);
+  }, [paymentId, verifyUrl]);
 
   return [status, setStatus] as const;
 }
