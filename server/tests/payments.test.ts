@@ -49,25 +49,21 @@ async function setup() {
   await createUser({ libraryId: lib.id, role: 'librarian', email: 'staff@city.test' });
   const admin = await signedInAgent(app, 'owner@city.test');
   const staff = await signedInAgent(app, 'staff@city.test');
-  const keys = await admin
-    .put('/api/library/payment-settings')
-    .send({
-      keyId: 'rzp_test_abcdefgh',
-      keySecret: 'secret_key_123',
-      webhookSecret: WEBHOOK_SECRET,
-    });
+  const keys = await admin.put('/api/library/payment-settings').send({
+    keyId: 'rzp_test_abcdefgh',
+    keySecret: 'secret_key_123',
+    webhookSecret: WEBHOOK_SECRET,
+  });
   expect(keys.status).toBe(200);
   const plan = (
-    await admin
-      .post('/api/membership-plans')
-      .send({
-        name: 'Gold',
-        price: 49900,
-        durationDays: 90,
-        bookLimit: 4,
-        finePerDay: 500,
-        tier: 'gold',
-      })
+    await admin.post('/api/membership-plans').send({
+      name: 'Gold',
+      price: 49900,
+      durationDays: 90,
+      bookLimit: 4,
+      finePerDay: 500,
+      tier: 'gold',
+    })
   ).body;
   // A verified member without a plan yet.
   const m = await activeMember(app, lib.id, 'reader@city.test');

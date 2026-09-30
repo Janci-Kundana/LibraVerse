@@ -1,50 +1,12 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import type { MemberCardDto, MemberLoansDto } from '@libraverse/shared';
-import { Button, Card, ErrorText, PageHeader, StatusPill } from '../../components/ui';
+import type { MemberLoansDto } from '@libraverse/shared';
+import { Button, Card, ErrorText, PageHeader } from '../../components/ui';
 import { api, errorMessage, post } from '../../lib/api';
 import { formatDate, rupees } from '../../lib/format';
 import { PayButton } from '../payments/MemberPayments';
 import { LoanSummary } from './LoanRow';
 
 export const MEMBER_LOANS_KEY = ['member', 'loans'] as const;
-
-const STATUS_TONE = { active: 'green', expired: 'red', blocked: 'red' } as const;
-
-/** A flat card with the signed QR; Phase 6 replaces it with the 3D card. */
-export function CardPage() {
-  const card = useQuery({
-    queryKey: ['member', 'card'],
-    queryFn: () => api<MemberCardDto>('/api/member/card'),
-  });
-  if (card.isError) return <ErrorText>{errorMessage(card.error)}</ErrorText>;
-  if (!card.data) return <p className="text-gray-400">Loading…</p>;
-  const c = card.data;
-  return (
-    <div className="max-w-md">
-      <PageHeader title="My card" />
-      <div className="rounded-2xl bg-gradient-to-br from-brand-900 to-gray-900 p-5 shadow-xl">
-        <div className="flex items-center justify-between">
-          <p className="font-semibold">{c.libraryName}</p>
-          <StatusPill tone={STATUS_TONE[c.status]}>{c.status}</StatusPill>
-        </div>
-        <p className="mt-6 font-mono text-lg tracking-widest">
-          {c.membershipNo.replace(/(\d{4})(?=\d)/g, '$1 ')}
-        </p>
-        <p className="mt-1 text-sm text-gray-300">
-          {c.name} · {c.tier} · valid thru {formatDate(c.validTill)}
-        </p>
-        <img
-          src={c.qrDataUrl}
-          alt="Membership QR code"
-          className="mx-auto mt-5 w-48 rounded-lg bg-white p-2"
-        />
-        <p className="mt-2 text-center text-xs text-gray-400">
-          Show this at the counter to borrow books
-        </p>
-      </div>
-    </div>
-  );
-}
 
 export function MyLoansPage() {
   const qc = useQueryClient();

@@ -39,6 +39,8 @@ Status: **approved 2026-09-29**. Each phase ends with green tests, run instructi
 - Webhook deliveries are de-duplicated by `x-razorpay-event-id` (platform-level `webhookEvents`, 30-day TTL); an amount mismatch is audited and never credits.
 - The counter pay link `/pay/:token` uses a 144-bit random token, which resolves the tenant (system-context lookup keyed by that token only).
 - Jest runs with `maxWorkers: 4`: every suite shares one in-memory mongod.
+- The 3D card's faces are drawn on 2D canvases (tier finishes, chip, monogram, embossed number, QR) and reused as Three.js textures and as the two PDF pages (jsPDF). Lighting uses local Lightformers, so no HDR is downloaded. The member photo on the card back is omitted: members upload an ID proof, not a portrait.
+- PWA: vite-plugin-pwa generateSW with an offline app shell; `/api` and `/socket.io` are never cached. Push handlers live in `public/push-sw.js` (imported into the worker). Web Push is optional (VAPID env vars) and is one more `notify()` channel.
 - Mongoose is pinned to **v8** (MongoDB driver 6). With Mongoose 9 / driver 7, the connection handshake fails inside Jest's VM sandbox ("Missing required sub-document 'driver' in the client metadata document"), although it works in plain Node. Revisit when upgrading.
 
 ## Progress
@@ -49,3 +51,4 @@ Status: **approved 2026-09-29**. Each phase ends with green tests, run instructi
 - [x] Phase 3: Catalog and discovery (2026-09-30)
 - [x] Phase 4: Circulation (2026-09-30)
 - [x] Phase 5: Payments and live updates (2026-09-30)
+- [x] Phase 6: 3D card and PWA (2026-09-30)

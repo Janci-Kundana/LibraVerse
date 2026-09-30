@@ -41,6 +41,16 @@ const envSchema = z.object({
     .optional()
     .or(z.literal('').transform(() => undefined)),
   UPLOAD_DIR: z.string().default('uploads'),
+  // Web Push (optional). Generate with: npx web-push generate-vapid-keys
+  VAPID_PUBLIC_KEY: z
+    .string()
+    .optional()
+    .or(z.literal('').transform(() => undefined)),
+  VAPID_PRIVATE_KEY: z
+    .string()
+    .optional()
+    .or(z.literal('').transform(() => undefined)),
+  VAPID_SUBJECT: z.string().default('mailto:admin@libraverse.local'),
 });
 
 export type Env = z.infer<typeof envSchema>;

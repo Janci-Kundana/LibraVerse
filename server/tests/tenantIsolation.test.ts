@@ -13,6 +13,7 @@ import { ReviewModel } from '../src/modules/reviews/model';
 import { CouponModel } from '../src/modules/coupons/model';
 import { LoanModel } from '../src/modules/loans/model';
 import { PaymentModel } from '../src/modules/payments/model';
+import { PushSubscriptionModel } from '../src/modules/push/model';
 import { ReservationModel } from '../src/modules/reservations/model';
 import { MemberProfileModel } from '../src/modules/members/model';
 import { MembershipPlanModel } from '../src/modules/membershipPlans/model';
@@ -124,6 +125,15 @@ const TENANT_MODELS: TenantCase[] = [
       expiresAt: new Date(),
     }),
     update: { amount: 7777 },
+  },
+  {
+    model: PushSubscriptionModel,
+    data: (tag) => ({
+      userId: new Types.ObjectId(),
+      endpoint: `https://push.example/${tag}`,
+      keys: { p256dh: 'p256dh-key-value', auth: 'auth-value' },
+    }),
+    update: { endpoint: 'https://push.example/changed' },
   },
   {
     model: AuditLogModel,

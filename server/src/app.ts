@@ -10,6 +10,8 @@ import { authRoutes } from './modules/auth/routes';
 import { branchRoutes } from './modules/branches/routes';
 import { adminLibraryRoutes, libraryRoutes } from './modules/libraries/routes';
 import { platformPlanRoutes } from './modules/platformPlans/routes';
+import { pushRoutes } from './modules/push/routes';
+import { registerPushChannel } from './modules/push/service';
 import { bookRoutes, copyRoutes } from './modules/books/routes';
 import { catalogRoutes } from './modules/catalog/routes';
 import { circulationRoutes, memberCirculationRoutes } from './modules/circulation/routes';
@@ -33,6 +35,7 @@ const isUpload = (path: string) => UPLOAD_PATHS.includes(path) || path.startsWit
 
 export function createApp() {
   const app = express();
+  registerPushChannel();
 
   app.disable('x-powered-by');
   app.use(helmet());
@@ -73,6 +76,7 @@ export function createApp() {
   app.use('/api/payments', staffPaymentRoutes);
   app.use('/api/member/payments', memberPaymentRoutes);
   app.use('/api/pay', publicPayRoutes);
+  app.use('/api/push', pushRoutes);
   app.use('/api/member', memberCirculationRoutes);
   app.use('/api/member', memberRoutes);
   app.use('/api/verifications', verificationRoutes);

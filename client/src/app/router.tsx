@@ -9,7 +9,8 @@ import {
   PublicPayPage,
 } from '../features/payments/StaffPayments';
 import { LoansPage, ReservationsPage } from '../features/circulation/LoansPage';
-import { CardPage, MyLoansPage } from '../features/circulation/MemberCirculationPages';
+import { CardPage } from '../features/card/CardPage';
+import { MyLoansPage } from '../features/circulation/MemberCirculationPages';
 import {
   MemberBookPage,
   MemberCatalogPage,

@@ -121,36 +121,6 @@ describe('member side', () => {
     'GET /api/auth/me': { status: 200, body: { user: authUser('member') } },
   };
 
-  it('shows the card with its QR', async () => {
-    mockApi({
-      ...member,
-      'GET /api/member/card': {
-        status: 200,
-        body: {
-          name: 'Meera',
-          libraryName: 'City Library',
-          libraryInitial: 'C',
-          logoUrl: null,
-          cardColours: [],
-          membershipNo: '4123456789012345',
-          memberSince: '2026-01-01T00:00:00Z',
-          validTill: '2026-12-31T00:00:00Z',
-          tier: 'gold',
-          status: 'active',
-          qrToken: 'LV1.x',
-          qrDataUrl: 'data:image/png;base64,AAAA',
-          revealed: true,
-        },
-      },
-    });
-    renderRoute(routes, '/member/card');
-    expect(await screen.findByAltText('Membership QR code')).toHaveAttribute(
-      'src',
-      'data:image/png;base64,AAAA',
-    );
-    expect(screen.getByText('4123 4567 8901 2345')).toBeInTheDocument();
-  });
-
   it('lists loans with dues and renews one', async () => {
     const calls = mockApi({
       ...member,

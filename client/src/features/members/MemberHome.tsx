@@ -6,6 +6,7 @@ import { api, errorMessage, post } from '../../lib/api';
 import { formatDate, readFileAsDataUrl, rupees } from '../../lib/format';
 import { HomeShell } from '../dashboard/DashboardLayout';
 import { PayButton } from '../payments/MemberPayments';
+import { NotificationsToggle } from '../dashboard/NotificationsToggle';
 
 export const PROFILE_KEY = ['member', 'profile'] as const;
 
@@ -37,6 +38,11 @@ export function MemberHome() {
         </p>
       </Card>
       <PlanList renewing={Boolean(p.planName)} />
+      <section className="mt-8">
+        <h2 className="text-lg font-semibold">Notifications</h2>
+        <p className="mb-2 text-sm text-gray-400">Due dates, reserved books ready, payments.</p>
+        <NotificationsToggle />
+      </section>
     </HomeShell>
   );
 }
