@@ -19,6 +19,8 @@ const ROLE_LABELS = {
   member: 'Member',
 } as const;
 
+const SLOW_AFTER_MS = 3000;
+
 type Step =
   | { kind: 'credentials' }
   | { kind: 'chooseLibrary'; choices: LibraryChoice[] }
@@ -32,6 +34,7 @@ export function LoginPage() {
   const [step, setStep] = useState<Step>({ kind: 'credentials' });
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
+  const [slow, setSlow] = useState(false);
   const navigate = useNavigate();
   const [params] = useSearchParams();
   const qc = useQueryClient();
@@ -47,6 +50,8 @@ export function LoginPage() {
   async function run(action: () => Promise<void>) {
     setError('');
     setBusy(true);
+    // The hosted API sleeps when idle and takes up to a minute to wake.
+    const slowTimer = setTimeout(() => setSlow(true), SLOW_AFTER_MS);
     try {
       await action();
     } catch (err) {
@@ -56,6 +61,8 @@ export function LoginPage() {
         setError(errorMessage(err));
       }
     } finally {
+      clearTimeout(slowTimer);
+      setSlow(false);
       setBusy(false);
     }
   }
@@ -189,6 +196,11 @@ export function LoginPage() {
           </>
         )}
         <ErrorText>{error}</ErrorText>
+        {slow && (
+          <p role="status" className="text-sm text-gray-400">
+            Waking the server, this can take up to a minute…
+          </p>
+        )}
         <Button type="submit" busy={busy} className="w-full">
           {step.kind === 'otp' ? 'Verify' : 'Sign in'}
         </Button>

@@ -38,6 +38,20 @@ describe('LoginPage', () => {
     expect(await screen.findByRole('alert')).toHaveTextContent('Email or password is incorrect');
   });
 
+  it('explains the wait while the hosted server wakes up', async () => {
+    mockApi(approvedMemberRoutes);
+    // Sign-in never answers, like an API that is still starting.
+    const answer = vi.mocked(globalThis.fetch).getMockImplementation()!;
+    vi.mocked(globalThis.fetch).mockImplementation((input, init) =>
+      String(input).includes('/api/auth/login') ? new Promise(() => {}) : answer(input, init),
+    );
+    renderRoute(routes, '/login');
+    fillAndSubmit();
+    expect(
+      await screen.findByText(/Waking the server/, undefined, { timeout: 5000 }),
+    ).toBeInTheDocument();
+  });
+
   it('asks which library when the email has several, then signs into the chosen one', async () => {
     const calls = mockApi({
       ...approvedMemberRoutes,

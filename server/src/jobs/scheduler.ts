@@ -6,6 +6,7 @@ import { expireLapsedPro, expireUnpaid } from './payments';
 import { processDues } from '../modules/dues/service';
 import { applyDuePlanChanges } from '../modules/members/planChange';
 import { expirePlatformPayments } from '../modules/billing/service';
+import { keepAliveUrl, pingSelf } from './keepAlive';
 
 type PerLibraryJob = (libraryId: string, now: Date) => Promise<unknown>;
 
@@ -44,6 +45,10 @@ export function registerJob(name: string, schedule: string, run: PerLibraryJob) 
 const platformJobs: { name: string; schedule: string; run: () => Promise<unknown> }[] = [
   { name: 'platform-payment-expiry', schedule: '* * * * *', run: () => expirePlatformPayments() },
 ];
+
+const selfUrl = keepAliveUrl();
+if (selfUrl)
+  platformJobs.push({ name: 'keep-alive', schedule: '*/10 * * * *', run: () => pingSelf(selfUrl) });
 
 export function startJobs() {
   for (const job of platformJobs) {
